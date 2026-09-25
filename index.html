@@ -1447,16 +1447,23 @@ async function netInit(){
         if(!code)throw new Error('Missing room code');
         if(ROOMS[code])return ROOMS[code];
         const ch=SB.channel('mdb-room-'+code,{config:{broadcast:{self:true}}});
-        Object.keys(handlers).forEach(ev=>ch.on('broadcast',{event:ev},m=>handlers[ev].forEach(fn=>fn({data:m.payload}))));
-        await new Promise((resolve,reject)=>{
-          let settled=false;
-          ch.subscribe(status=>{
-            if(status==='SUBSCRIBED'){settled=true;resolve()}
-            else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){settled=true;reject(new Error(status))}
-          });
-          setTimeout(()=>{if(!settled)reject(new Error('Realtime connection timed out'))},10000);
-        });
+        // Reserve the room immediately so concurrent host calls share one channel
+        // instead of racing and replacing the channel after handlers are attached.
         ROOMS[code]=ch;
+        Object.keys(handlers).forEach(ev=>ch.on('broadcast',{event:ev},m=>handlers[ev].forEach(fn=>fn({data:m.payload}))));
+        try{
+          await new Promise((resolve,reject)=>{
+            let settled=false;
+            ch.subscribe(status=>{
+              if(status==='SUBSCRIBED'){settled=true;resolve()}
+              else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){settled=true;reject(new Error(status))}
+            });
+            setTimeout(()=>{if(!settled)reject(new Error('Realtime connection timed out'))},10000);
+          });
+        }catch(e){
+          if(ROOMS[code]===ch)delete ROOMS[code];
+          throw e;
+        }
         return ch;
       },
       on(ev,fn){
