@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Marvel Draft Battle</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0e1331;--panel:#181f4d;--panel2:#212a63;--line:#343f86;--text:#f2f3ff;--muted:#a4aad8;
+  --gold:#ffd23f;--gold-ink:#2a2100;--pink:#ff4fa3;--cyan:#29c5f6;--bad:#ff6b6b;--ok:#7ee081;
+  --dot:rgba(255,255,255,.07);--goldtx:#ffd23f;
+  --disp:'Big Shoulders Display','Arial Narrow',Impact,sans-serif;
+  --body:'Archivo','Helvetica Neue',Arial,sans-serif;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --bg:#e8ebff;--panel:#ffffff;--panel2:#f1f3ff;--line:#c6cdf2;--text:#141a3c;--muted:#565d8c;--dot:rgba(20,26,60,.08);--gold:#f5c400;--goldtx:#a37800}}
+:root[data-theme="dark"]{--goldtx:#ffd23f;--bg:#0e1331;--panel:#181f4d;--panel2:#212a63;--line:#343f86;--text:#f2f3ff;--muted:#a4aad8;--dot:rgba(255,255,255,.07)}
+:root[data-theme="light"]{--bg:#e8ebff;--panel:#ffffff;--panel2:#f1f3ff;--line:#c6cdf2;--text:#141a3c;--muted:#565d8c;--dot:rgba(20,26,60,.08);--gold:#f5c400;--goldtx:#a37800}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);background-image:radial-gradient(var(--dot) 1.2px,transparent 1.5px);background-size:9px 9px;color:var(--text);font:16px/1.45 var(--body)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+#app{max-width:1180px;margin:0 auto;padding:16px 16px 40px}
+h1,h2,h3{font-family:var(--disp);font-weight:800;line-height:.95;margin:0;letter-spacing:.01em}
+.muted{color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:14px 20px;font-weight:700;font-size:17px;background:var(--panel2);border:2px solid var(--line);min-height:52px}
+.btn.primary{background:var(--pink);border-color:var(--pink);color:#fff}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.35}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;padding:8px;font-size:15px}
+
+/* ---------- home ---------- */
+.hero{min-height:78vh;display:grid;place-content:center;text-align:center;gap:22px}
+.logo{font-family:var(--disp);font-weight:900;font-size:clamp(64px,15vw,168px);line-height:.82;text-transform:uppercase;color:var(--text);
+  text-shadow:-5px 3px 0 var(--pink),5px -3px 0 var(--cyan)}
+.logo span{display:block}
+.hero p{max-width:34ch;margin:0 auto;color:var(--muted);font-size:18px}
+.hero .actions{display:grid;gap:10px;width:min(360px,100%);margin:10px auto 0}
+.histChip{display:flex;align-items:center;gap:9px;width:min(360px,100%);margin:22px auto 0;padding:11px 18px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:var(--muted);font:600 14px/1.3 var(--body);cursor:pointer;transition:border-color .15s ease,color .15s ease,transform .15s ease}
+.histChip:hover{border-color:var(--gold);color:var(--text);transform:translateY(-1px)}
+.histChip .hcNum{font-family:var(--disp);font-weight:800;font-size:18px;color:var(--gold);line-height:1}
+.histChip .hcLbl{flex:1;text-align:left}
+.histChip .hcLbl b{color:var(--text);font-weight:700}
+.histChip .hcArrow{color:var(--muted);font-size:20px;line-height:1}
+.histList{display:flex;flex-direction:column;text-align:left}
+.histRow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
+.histRow:last-child{border-bottom:0}
+.histRow .hDate{color:var(--muted);font-size:13px;min-width:48px}
+.histRow .hWin{flex:1;font-weight:700}
+.histRow .hPl{color:var(--muted);font-size:13px}
+.howto{max-width:620px;margin:0 auto;background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:20px 24px}
+.howto ol{padding-left:22px;margin:12px 0}.howto li{margin:8px 0}
+
+/* ---------- setup ---------- */
+.setup{max-width:760px;margin:0 auto;display:grid;gap:16px}
+.setup h2{font-size:clamp(42px,8vw,64px)}
+.box{background:var(--panel);border:2px solid var(--line);border-radius:18px;padding:18px}
+.box h3{font-size:26px;margin-bottom:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 0}
+.row+.row{border-top:1px solid var(--line)}
+.row small{display:block;color:var(--muted)}
+.step{display:flex;align-items:center;gap:6px}
+.step button{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--panel2);font-size:22px;font-weight:700}
+.step b{min-width:40px;text-align:center;font-family:var(--disp);font-size:30px}
+.names{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.name{display:flex;align-items:center;gap:8px;background:var(--panel2);border-radius:12px;padding:4px 4px 4px 12px;border:2px solid var(--line)}
+.name i{width:14px;height:14px;border-radius:50%;flex:none}
+.name input{flex:1;min-width:0;border:0;background:none;color:var(--text);font:600 17px var(--body);padding:10px 4px}
+.name input:focus{outline:none}.name:focus-within{border-color:var(--cyan)}
+.seg{display:inline-flex;background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{border:0;background:none;border-radius:9px;padding:9px 14px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--text);color:var(--bg)}
+.num{width:84px;border:2px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font:700 18px var(--body);padding:9px;text-align:center}
+.toggle{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.toggle input{width:24px;height:24px;accent-color:var(--pink);flex:none;margin-top:2px}
+
+/* ---------- game ---------- */
+.top{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.top .brand{font-family:var(--disp);font-weight:900;font-size:26px;text-transform:uppercase;text-shadow:-2px 1px 0 var(--pink),2px -1px 0 var(--cyan);margin-right:auto}
+.pill{background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:600;font-size:14px}
+.top .btn{min-height:42px;padding:8px 14px;font-size:15px}
+.game{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}
+@media (max-width:900px){.game{grid-template-columns:1fr}}
+.stage{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:20px;min-width:0}
+.turn{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.turn h2{font-size:clamp(34px,6vw,54px)}
+.turn .who{color:var(--pc)}
+
+/* face-down cards */
+.deck{display:flex;justify-content:center;gap:clamp(8px,3vw,28px);padding:34px 4px 20px}
+.back{width:min(190px,calc((100% - 32px)/3));flex:none;aspect-ratio:5/7;border-radius:16px;border:4px solid var(--text);
+  background:radial-gradient(rgba(255,255,255,.35) 1.6px,transparent 2px) 0 0/10px 10px,var(--pink);
+  display:grid;place-items:center;font:900 clamp(56px,12vw,96px)/1 var(--disp);color:#fff;text-shadow:4px 4px 0 var(--bg);
+  transition:transform .18s ease;box-shadow:6px 6px 0 var(--bg)}
+.back:nth-child(1){transform:rotate(-4deg)}.back:nth-child(2){transform:rotate(1deg) translateY(-8px);background-color:var(--cyan)}.back:nth-child(3){transform:rotate(5deg)}
+.back:hover,.back:focus-visible{transform:translateY(-14px) rotate(0)}
+.hint{text-align:center;color:var(--muted);margin:0}
+
+/* revealed card */
+.reveal{display:grid;grid-template-columns:minmax(170px,240px) minmax(0,1fr);gap:22px;margin:18px 0 6px;align-items:center}
+@media (max-width:560px){.reveal{grid-template-columns:1fr;justify-items:center;text-align:center}.face{max-width:170px}}
+.face{width:100%;max-width:240px;aspect-ratio:5/7;border-radius:18px;border:4px solid var(--text);position:relative;overflow:hidden;
+  background:radial-gradient(rgba(0,0,0,.28) 1.6px,transparent 2px) 0 0/9px 9px,var(--cc);box-shadow:8px 8px 0 var(--bg);display:grid;place-items:center}
+.face .mono{font:900 clamp(78px,16vw,118px)/.8 var(--disp);color:#fff;text-shadow:5px 5px 0 rgba(0,0,0,.35)}
+.face .form{position:absolute;left:10px;right:10px;bottom:10px;background:var(--text);color:var(--bg);border-radius:10px;padding:6px 8px;font-weight:700;font-size:14px;text-align:center}
+.flip{animation:flip .55s cubic-bezier(.2,.7,.2,1.2)}
+@keyframes flip{from{transform:perspective(800px) rotateY(90deg) scale(.9)}to{transform:none}}
+.info h2{font-size:clamp(40px,7vw,68px)}
+.info .formname{font:700 20px var(--body);color:var(--cc2);margin:6px 0 10px}
+.info p{margin:0;max-width:52ch}
+
+/* price tag – the loud bit */
+.tag{display:inline-flex;align-items:center;gap:14px;margin-top:16px;background:var(--gold);color:var(--gold-ink);border-radius:14px;padding:8px 18px 8px 10px;
+  transform:rotate(-2deg);box-shadow:5px 5px 0 var(--pc)}
+.tag .amt{font:900 50px/1 var(--disp);min-width:48px;text-align:center;background:var(--gold-ink);color:var(--gold);border-radius:10px;padding:4px 10px}
+.tag .who{font:800 26px/1 var(--disp)}.tag small{display:block;font:600 13px var(--body);opacity:.75}
+.bump{animation:bump .25s ease}@keyframes bump{50%{transform:rotate(-2deg) scale(1.08)}}
+
+.dock{margin-top:22px;border-top:2px dashed var(--line);padding-top:16px;display:grid;gap:14px}
+.dock h3{font-size:22px}
+.bidders{display:flex;flex-wrap:wrap;gap:8px}
+.bidder{border:2px solid var(--line);background:var(--panel2);border-radius:12px;padding:10px 14px;min-height:54px;display:flex;align-items:center;gap:10px;font-weight:700;text-align:left}
+.bidder i{width:12px;height:36px;border-radius:6px;background:var(--pc);flex:none}
+.bidder small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+.bidder.on{border-color:var(--pc);background:var(--pc);color:#10142e}.bidder.on small{color:#10142e}.bidder.on i{background:#10142e}
+.bidder:disabled{opacity:.3}
+.coins{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:8px}
+.coin{aspect-ratio:1;border-radius:50%;border:3px solid var(--gold);background:transparent;color:var(--text);font:800 24px/1 var(--disp);min-height:48px}
+.coin.on{background:var(--gold);color:var(--gold-ink);box-shadow:0 0 0 4px var(--bg),0 0 0 7px var(--gold)}
+.coin:disabled{opacity:.18;border-style:dashed}
+.award{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.bidbar{position:sticky;bottom:0;background:var(--panel);margin-top:14px;padding:12px 2px calc(12px + env(safe-area-inset-bottom,0px));border-top:2px solid var(--line);display:grid;gap:8px;z-index:3}
+.joincard .face.mini{max-width:220px;margin:0 auto}
+@media (max-width:900px){.stage{max-height:calc(100dvh - 130px);overflow-y:auto;-webkit-overflow-scrolling:touch}.dock{position:sticky;bottom:-20px;background:var(--panel);margin:22px -20px -20px;padding:14px 20px calc(14px + env(safe-area-inset-bottom,0px));border-radius:0 0 20px 20px;z-index:3}}
+.award .btn.gold{flex:1;min-width:240px;font-size:19px;min-height:60px}
+
+.swap{display:grid;gap:8px}
+.swap button{text-align:left;display:flex;justify-content:space-between;align-items:center}
+
+/* roster */
+.roster{display:grid;gap:10px}
+.roster h3{font-size:24px;padding:0 4px}
+.pt{background:var(--panel);border:2px solid var(--line);border-left:8px solid var(--pc);border-radius:16px;padding:12px 14px}
+.pt.now{border-color:var(--pc);box-shadow:0 0 0 3px var(--pc)}
+.pt.out{opacity:.55}
+.pt .hd{display:flex;align-items:center;gap:8px}
+.pt .nm{font:800 24px/1 var(--disp);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt .cn{font:900 30px/1 var(--disp);color:var(--goldtx)}.pt .cn small{font:600 12px var(--body);color:var(--muted);margin-left:3px}
+.badge{font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;background:var(--panel2);border:1px solid var(--line)}
+.badge.bad{background:var(--bad);border-color:var(--bad);color:#200}
+.badge.go{background:var(--pc);border-color:var(--pc);color:#10142e}
+.slots{display:flex;gap:5px;margin:10px 0 6px}
+.slot{flex:1;aspect-ratio:1;max-width:46px;border-radius:9px;border:2px dashed var(--line);display:grid;place-items:center;font:800 16px var(--disp);color:#fff}
+.slot.f{border:0;background:radial-gradient(rgba(0,0,0,.25) 1px,transparent 1.3px) 0 0/5px 5px,var(--cc)}
+.slot.req{border-color:var(--muted)}
+.team{margin:0;padding:0;list-style:none;font-size:13.5px;color:var(--muted)}
+.team li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team b{color:var(--text);font-weight:600}
+
+/* overlay + end */
+.ov{position:fixed;inset:0;background:rgba(5,8,25,.72);display:grid;place-items:center;padding:16px;z-index:10}
+.sheet{background:var(--panel);border:2px solid var(--line);border-radius:20px;padding:20px;width:min(440px,100%);max-height:88vh;overflow:auto;display:grid;gap:10px}
+.sheet h2{font-size:36px}
+.end{display:grid;gap:18px}
+.end>h2{font-size:clamp(48px,9vw,86px)}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.res .team{font-size:15px}.res .team li{white-space:normal;padding:3px 0;border-bottom:1px solid var(--line)}
+.crown{border:2px solid var(--line);background:var(--panel2);border-radius:10px;padding:6px 10px;font-weight:700;font-size:14px;margin-top:10px}
+.crown.on{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+.pt.win{box-shadow:0 0 0 4px var(--gold)}
+details.log{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:12px 16px}
+details.log summary{cursor:pointer;font-weight:700}
+details.log ol{margin:10px 0 0;padding-left:22px;font-size:14px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:12px;font-weight:700;z-index:20}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- v2 polish ---------- */
+body{background-image:radial-gradient(var(--dot) 1.2px,transparent 1.5px),radial-gradient(ellipse 70% 40% at 50% -5%,rgba(255,79,163,.22),transparent 70%);background-size:9px 9px,100% 100%;background-attachment:fixed}
+.stage{background:linear-gradient(180deg,var(--panel),var(--panel2));box-shadow:0 12px 40px -18px #000}
+.back{background-image:radial-gradient(rgba(255,255,255,.35) 1.6px,transparent 2px),linear-gradient(135deg,rgba(255,255,255,.3),transparent 50%);background-size:10px 10px,100% 100%;cursor:pointer}
+.back:hover{box-shadow:6px 6px 0 var(--bg),0 0 34px rgba(255,79,163,.6)}
+.face{box-shadow:8px 8px 0 var(--bg),0 0 38px -6px var(--cc)}
+.face svg,.face img{position:absolute;inset:0;width:100%;height:100%}
+.face::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.3) 48%,transparent 60%) 120% 0/250% 100%;animation:sheen 3.6s ease-in-out infinite}
+@keyframes sheen{to{background-position:-40% 0}}
+.face .form{z-index:2;display:grid;gap:1px;line-height:1.1;padding:7px 8px}
+.face .form b{font:800 19px/1 var(--disp);text-transform:uppercase;letter-spacing:.02em}
+.face .form i{font-style:normal;font-size:12px;opacity:.75}
+.slot{overflow:hidden;position:relative}.slot svg{width:100%;height:100%;display:block}
+.exs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.ex{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--line);background:var(--panel2);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600}
+.ex i{width:10px;height:10px;border-radius:50%;background:var(--pc)}.ex.done{border-color:var(--ok)}
+.dock.auto{background:var(--panel2);border:2px solid var(--gold);border-radius:14px;padding:14px 16px}
+.info h2{background:linear-gradient(90deg,var(--text),var(--cc));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.pt{transition:transform .15s}.pt.now{transform:translateX(-4px)}
+#mbtn{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:15;width:48px;height:48px;border-radius:50%;border:2px solid var(--line);background:var(--panel);color:var(--text);font-size:22px;box-shadow:0 6px 18px -6px #000;display:grid;place-items:center}
+#mbtn.on{border-color:var(--pink);box-shadow:0 0 0 3px rgba(255,79,163,.35)}
+
+/* ---------- v3: logo, motion, VFX ---------- */
+.logo3{position:relative;display:grid;justify-items:center;line-height:.85;text-transform:uppercase;font-family:var(--disp);font-weight:900;isolation:isolate;margin:0;padding:34px 12px 22px;transform:rotate(-3deg)}
+.logo3::before{content:'';position:absolute;inset:-30% -14%;z-index:-2;background:repeating-conic-gradient(rgba(255,210,63,.3) 0 6deg,transparent 6deg 16deg);-webkit-mask:radial-gradient(circle,#000 20%,transparent 66%);mask:radial-gradient(circle,#000 20%,transparent 66%);animation:spin 45s linear infinite}
+.logo3::after{content:'';position:absolute;inset:0;z-index:-3;background:radial-gradient(ellipse at 30% 50%,rgba(255,79,163,.35),transparent 60%),radial-gradient(ellipse at 75% 55%,rgba(41,197,246,.3),transparent 60%);filter:blur(18px)}
+.logo3 .w{position:relative;display:block;filter:drop-shadow(5px 5px 0 var(--pink)) drop-shadow(10px 10px 0 rgba(0,0,0,.45));animation:slam .7s cubic-bezier(.2,.9,.3,1.3) backwards}
+.logo3 .w::before{content:attr(data-t);position:absolute;inset:0;z-index:-1;color:#0b0f2b;-webkit-text-stroke:.09em #0b0f2b}
+.logo3 .l1{font-size:clamp(66px,17vw,180px);color:transparent;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.95) 50%,transparent 58%) 130% 0/250% 100%,linear-gradient(180deg,#fff6b0,#ffd23f 45%,#ff8a1f);-webkit-background-clip:text;background-clip:text;animation:slam .7s cubic-bezier(.2,.9,.3,1.3) backwards,shine 4.5s 1.2s ease-in-out infinite}
+.logo3 .l2{font-size:clamp(84px,22vw,236px);margin-top:-.04em;color:transparent;background:linear-gradient(180deg,#fff,#a8ecff 55%,#29c5f6);-webkit-background-clip:text;background-clip:text;animation-delay:.15s}
+.logo3 .l3{font-size:clamp(34px,8.4vw,92px);margin-top:.16em;padding:.06em .55em .02em;letter-spacing:.2em;color:#fff;background:linear-gradient(90deg,#ff4fa3,#ff8a3d);border:.07em solid #0b0f2b;transform:skewX(-9deg);text-shadow:3px 3px 0 #0b0f2b;animation-delay:.3s}
+.logo3 .l3::before{content:none}
+.sp{position:absolute;width:26px;height:26px;background:#fff;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:tw 2.6s ease-in-out infinite;z-index:3}
+.top .brand{background:linear-gradient(180deg,#fff6b0,#ffd23f 60%,#ff8a1f);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(2px 2px 0 var(--pink))}
+.fan{display:flex;justify-content:center;align-items:flex-end;height:clamp(110px,22vw,170px);margin-bottom:-6px}
+.fc{width:clamp(70px,14vw,110px);aspect-ratio:5/7;border-radius:12px;border:3px solid var(--text);overflow:hidden;position:relative;margin:0 -12px;transform:rotate(var(--r)) translateY(var(--y));box-shadow:5px 5px 0 var(--bg),0 0 26px -6px var(--cc);animation:float 4s ease-in-out infinite,rise .7s backwards;animation-delay:var(--d)}
+.fc svg{width:100%;height:100%;display:block}
+@keyframes float{50%{transform:rotate(var(--r)) translateY(calc(var(--y) - 10px))}}
+@keyframes slam{from{opacity:0;transform:scale(2.4) rotate(-6deg)}60%{transform:scale(.94)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes tw{0%,100%{opacity:0;transform:scale(.2) rotate(0)}50%{opacity:1;transform:scale(1) rotate(90deg)}}
+@keyframes shine{to{background-position:-40% 0,0 0}}
+@keyframes shine2{to{background-position:-60% 0}}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}}
+@keyframes pop{from{opacity:0;transform:scale(.92) translateY(10px)}}
+@keyframes deal{from{opacity:0;transform:translateY(-70px) rotate(-22deg) scale(.7)}}
+@keyframes pulse{50%{box-shadow:0 0 0 3px var(--pc),0 0 28px var(--pc)}}
+@keyframes drift{to{transform:translate(4%,3%) scale(1.12)}}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(.2);opacity:0}}
+@keyframes fall{from{opacity:0}5%{opacity:1}to{transform:translate(var(--dx),105vh) rotate(720deg);opacity:1}}
+@keyframes ring{from{transform:translate(-50%,-50%) scale(.2);opacity:.9}to{transform:translate(-50%,-50%) scale(3.2);opacity:0}}
+body::before{content:'';position:fixed;inset:-20%;z-index:-1;pointer-events:none;background:radial-gradient(circle at 20% 30%,rgba(41,197,246,.16),transparent 40%),radial-gradient(circle at 80% 70%,rgba(255,79,163,.16),transparent 40%);animation:drift 22s ease-in-out infinite alternate}
+.hero p,.hero .actions .btn,.howto,.end>*{animation:rise .6s ease backwards}
+.hero p{animation-delay:.5s}.hero .actions .btn:nth-child(1){animation-delay:.65s}.hero .actions .btn:nth-child(2){animation-delay:.8s}.hero .actions .btn:nth-child(3){animation-delay:.95s}
+.back{position:relative;animation:deal .55s cubic-bezier(.2,.9,.3,1.2) backwards}.back:nth-child(2){animation-delay:.1s}.back:nth-child(3){animation-delay:.2s}
+.back::before{content:'';position:absolute;inset:9px;border:3px dashed rgba(255,255,255,.55);border-radius:10px}
+.face{transform:perspective(700px) rotateY(var(--ry,0deg)) rotateX(var(--rx,0deg));transition:transform .12s ease-out}
+.btn{transition:transform .12s,filter .12s,box-shadow .12s}
+.btn:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.08)}.btn:active:not(:disabled){transform:translateY(1px) scale(.98)}
+.btn.primary{box-shadow:0 8px 26px -8px var(--pink)}
+.btn.gold{position:relative;overflow:hidden}.btn.gold::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.6) 50%,transparent 60%) 160% 0/250% 100%;animation:shine2 2.8s infinite}
+.coin,.bidder{transition:transform .12s}.coin:hover:not(:disabled){transform:scale(1.12)}.bidder:hover:not(:disabled){transform:translateY(-2px)}.coin.on{animation:pop .2s}
+.pt.now{animation:pulse 1.8s ease-in-out infinite}.pt.win{animation:pulse 2s ease-in-out infinite}
+.results .pt{animation:rise .5s backwards}.results .pt:nth-child(2){animation-delay:.1s}.results .pt:nth-child(3){animation-delay:.2s}.results .pt:nth-child(4){animation-delay:.3s}
+.ov{backdrop-filter:blur(5px);animation:pop .2s ease}.sheet{animation:pop .25s ease}.toast{animation:pop .2s ease}
+.fp,.fr{position:fixed;z-index:30;pointer-events:none;width:var(--s);height:var(--s);border-radius:2px;background:var(--c)}
+.fp{animation:fly .95s cubic-bezier(.1,.7,.3,1) forwards}.fr{animation:fall var(--t) linear both}
+.ring{position:fixed;z-index:29;pointer-events:none;width:120px;height:120px;border:4px solid #fff;border-radius:50%;animation:ring .6s ease-out forwards}
+
+/* ---------- v4: stats, bonding, auction, skins ---------- */
+.rar{position:absolute;top:8px;left:8px;z-index:2;font:800 12px var(--body);text-transform:uppercase;letter-spacing:.06em;padding:3px 9px;border-radius:999px;background:var(--rc);color:#10142e}
+.face{border-color:var(--rc,var(--text));box-shadow:8px 8px 0 var(--bg),0 0 40px -4px var(--rc,var(--cc))}
+.stats{display:grid;gap:5px;margin-top:12px;max-width:340px}
+.st{display:grid;grid-template-columns:34px 1fr 26px;gap:8px;align-items:center;font:700 12px var(--body);color:var(--muted)}
+.st u{height:8px;border-radius:6px;background:var(--line);overflow:hidden;display:block;text-decoration:none}
+.st u i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--pink));border-radius:6px;animation:grow .8s ease backwards}
+@keyframes grow{from{width:0!important}}
+.bond{margin-top:8px}.bond small{display:flex;justify-content:space-between;color:var(--muted);font-weight:600}.bond b{color:var(--text)}
+.bond .bar{height:10px;border-radius:8px;background:var(--line);overflow:hidden;margin-top:3px}.bond .bar i{display:block;height:100%;background:linear-gradient(90deg,#ff6b6b,#ffd23f,#7ee081);transition:width .6s}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--panel2);border:1px solid var(--line)}.chip.bad{background:var(--bad);color:#200;border-color:var(--bad)}
+.stack{display:flex;margin:6px 0 0 6px;flex-wrap:wrap}.stack i{width:14px;height:14px;border-radius:50%;background:var(--gold);border:2px solid var(--gold-ink);margin-left:-6px}
+.quick{display:flex;gap:8px;flex-wrap:wrap}.quick .btn{min-height:44px;padding:8px 18px}
+.hist{display:flex;gap:6px;flex-wrap:wrap;font-size:13px}.hist span{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px 9px}.hist span:last-child{background:var(--gold);color:var(--gold-ink);border-color:var(--gold);font-weight:700}
+#gv{position:fixed;inset:0;z-index:40;display:grid;place-content:center;justify-items:center;gap:14px;background:rgba(5,8,25,.85);backdrop-filter:blur(4px);text-align:center}
+#gv h2{font-size:clamp(50px,13vw,130px);color:var(--gold);text-shadow:5px 5px 0 var(--pink);min-height:1em;animation:slam .5s cubic-bezier(.2,.9,.3,1.3)}
+#gv .hm{font-size:84px;animation:hammer .45s ease-in infinite alternate;transform-origin:85% 85%}@keyframes hammer{to{transform:rotate(-45deg)}}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;height:230px}
+.pod{flex:1;max-width:200px;border-radius:14px 14px 0 0;background:var(--panel);border:2px solid var(--line);border-bottom:0;border-top:6px solid var(--pc);text-align:center;padding:10px 6px;display:grid;align-content:start;gap:2px;animation:rise .7s backwards}
+.pod b{font:800 24px/1 var(--disp)}.pod .sc{font:900 44px/1 var(--disp);color:var(--goldtx)}
+.hl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.hl div{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-size:14px}
+.th{width:38px;height:38px;border-radius:8px;overflow:hidden;flex:none;background:var(--cc);position:relative}.th svg{width:100%;height:100%;display:block}
+.pool{max-height:48vh;overflow:auto;display:grid;gap:6px}.pi{display:flex;align-items:center;gap:10px;font-size:14px}
+.sheet input.q{width:100%;border:2px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:10px;font:600 16px var(--body)}
+#sbtn{position:fixed;left:72px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:15;width:48px;height:48px;border-radius:50%;border:2px solid var(--line);background:var(--panel);color:var(--text);font-size:22px;display:grid;place-items:center;box-shadow:0 6px 18px -6px #000}#sbtn.on{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(41,197,246,.3)}
+:root[data-skin=cosmic]{--bg:#120a2b;--panel:#1d1245;--panel2:#2a1b63;--line:#4b3a99;--pink:#b56cff;--cyan:#39e6d0;--gold:#ffc857;--muted:#b9acf0;--text:#f4f0ff;--dot:rgba(255,255,255,.07)}
+:root[data-skin=neon]{--bg:#05070d;--panel:#0d1220;--panel2:#141b30;--line:#22315a;--pink:#ff2bd6;--cyan:#00ffa3;--gold:#f5ff3a;--muted:#8fa3d6;--text:#eaf2ff;--dot:rgba(0,255,163,.08)}
+
+/* ---------- v5: timer, countdown, online ---------- */
+.tm{display:flex;align-items:center;gap:12px;margin-top:18px}.tmb{flex:1;height:14px;border-radius:9px;background:var(--line);overflow:hidden}.tmb i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--cyan),var(--gold));border-radius:9px;transition:width .1s linear}
+.tm b{font:900 42px/1 var(--disp);min-width:66px;text-align:right}.tm.hot b{color:var(--bad);animation:pc .5s infinite alternate}.tm.hot .tmb i{background:var(--bad)}@keyframes pc{to{transform:scale(1.15)}}
+#gv{gap:18px;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--pc) 38%,transparent),rgba(5,8,25,.95) 70%);overflow:hidden}
+#gv::before{content:'';position:absolute;inset:-50%;background:repeating-conic-gradient(rgba(255,210,63,.13) 0 8deg,transparent 8deg 20deg);animation:spin 30s linear infinite;z-index:-1}
+.gvc{display:grid;gap:3px}.gvc small{letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:700;font-size:13px}.gvc b{font:900 clamp(34px,7vw,64px)/1 var(--disp);text-transform:uppercase}.gvc span{color:var(--pc);font-weight:700}
+.gvn{font:900 clamp(170px,44vw,400px)/.85 var(--disp);color:var(--gold);-webkit-text-stroke:.03em #0b0f2b;text-shadow:.03em .04em 0 var(--pc),0 0 70px rgba(255,210,63,.5);animation:slam .45s cubic-bezier(.2,.9,.3,1.4)}
+.gvn.sold{font-size:clamp(90px,26vw,240px);color:#fff;background:var(--pc);padding:0 .12em;border-radius:.1em;-webkit-text-stroke:0;text-shadow:.03em .03em 0 #0b0f2b;transform:rotate(-6deg);animation:stamp .5s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes stamp{from{opacity:0;transform:scale(3) rotate(-20deg)}to{transform:rotate(-6deg)}}
+.gvl{display:flex;align-items:center;gap:14px;background:var(--panel);border:2px solid var(--pc);border-radius:16px;padding:10px 18px;font:800 28px/1 var(--disp);text-align:left}.gvl i{width:12px;height:44px;border-radius:6px;background:var(--pc)}.gvl small{display:block;font:600 12px var(--body);color:var(--muted)}
+.gvl em{font:900 52px/1 var(--disp);font-style:normal;color:var(--gold-ink);background:var(--gold);border-radius:12px;padding:2px 14px}
+.shk{animation:shk .4s}@keyframes shk{20%{transform:translate(-8px,4px)}40%{transform:translate(8px,-4px)}60%{transform:translate(-5px,-3px)}80%{transform:translate(4px,3px)}}
+.code{font:900 44px var(--disp);letter-spacing:.2em;color:var(--gold)}.ctl{display:grid;gap:14px;max-width:520px;margin:0 auto}.ctl .quick .btn{flex:1;font-size:22px;min-height:64px}
+.jt{font:900 64px/1 var(--disp);text-align:center;color:var(--gold)}
+
+/* ---------- v5.1 fixes ---------- */
+.logo3 .w::before{content:none}
+.logo3 .l1,.logo3 .l2{background:none;-webkit-text-stroke:.075em #0b0f2b;paint-order:stroke fill;animation:slam .7s cubic-bezier(.2,.9,.3,1.3) backwards}
+.logo3 .l1{color:#ffd23f;filter:drop-shadow(4px 5px 0 var(--pink)) drop-shadow(8px 10px 0 rgba(0,0,0,.4))}
+.logo3 .l2{color:#bff1ff;filter:drop-shadow(4px 5px 0 var(--pink)) drop-shadow(8px 10px 0 rgba(0,0,0,.4))}
+#gv{gap:14px;padding:16px;background:radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--pc) 30%,#0b0f2b),#050819 72%)}
+#gv::before{opacity:.35}
+.gvn{font-size:clamp(150px,34vw,300px);-webkit-text-stroke:0;paint-order:normal;text-shadow:0 .04em 0 #0b0f2b,.04em .06em 0 var(--pc),0 0 80px rgba(255,210,63,.45)}
+.gvn.sold{text-shadow:.03em .03em 0 #0b0f2b}
+.gvs{font:800 22px var(--disp);letter-spacing:.24em;text-transform:uppercase;color:var(--gold);min-height:1.2em}
+.gvl{min-width:min(340px,92vw);justify-content:space-between}.gvl span{flex:1}
+.gvb{display:grid;gap:8px;justify-items:center;width:min(440px,100%)}.gvb>small{color:var(--muted);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:12px}.gvb .bidders{justify-content:center}
+.sb{width:100%;border-collapse:collapse;font-size:15px}.sb th{text-align:left;color:var(--muted);font-weight:700;padding:6px 8px;border-bottom:2px solid var(--line)}.sb td{padding:8px;border-bottom:1px solid var(--line)}.sb td:first-child{font-weight:700;display:flex;align-items:center;gap:8px}.sb td:first-child i{width:10px;height:22px;border-radius:5px;flex:none}.sb b{font:900 24px var(--disp);color:var(--goldtx)}
+</style></head>
+<body><div id="app"></div>
+<script>
+const RAW="Thor:King Thor,Old King Thor,All-Father Thor,Herald of Galactus,All-Black Thor,All-Black King Thor,Rune King Thor;Hulk:Professor Hulk,World War Hulk,World Breaker Hulk,Immortal Hulk,Devil Hulk,Titan Hulk,Maestro,Breaker of Worlds;Iron Man:Extremis,Bleeding Edge,Model Prime,Superior Iron Man,Godkiller,Godbuster,Thorbuster;Captain America:Mjolnir,Hydra Supreme;Doctor Strange:Sorcerer Supreme,Black Priest,God of Magic,Multiverse Strange,Strange Supreme;Scarlet Witch:Chaos Magic,House of M,Life Force,Darkhold,Multiversal Wanda;Captain Marvel:Binary,Warbird,Cosmic-Enhanced;Vision:Solar Jewel,White Vision,Infinity Stone Vision,House of M Vision;Black Panther:Enhanced Heart-Shaped Herb,Necropolis-Enhanced,Intergalactic Empire;Ant-Man:Giant-Man,Quantum-Enhanced;Wasp:Janet van Dyne,Hope van Dyne;Sentry:Golden Sentry,Void,Merged Sentry/Void,Death Seed;Blue Marvel:Anti-Matter Enhanced;Hercules:Godly Hercules,Full Olympian Power;She-Hulk:Savage,Immortal;Red Hulk:Full Power;Red She-Hulk;Ares:God of War;Quasar:Full Quantum Bands;Spectrum:Full Energy Form;Starbrand:Full Power;Namor:King of Atlantis,Phoenix-Enhanced;Valkyrie:King Valkyrie;Black Knight:Ebony Blade;Moon Knight:Khonshu,Phoenix;Shang-Chi:Ten Rings,Master of Kung Fu;Spider-Man:Symbiote,The Other,Cosmic,Captain Universe,Spider-Hulk,Last Stand,House of M;Spider-Man 2099;Spider-Man 2099:Enhanced;Miles Morales:Venom Blast,King in Black;Ghost-Spider;Spider-Woman:Jessica Drew,Julia Carpenter;Silk;Spider-Girl:Mayday Parker;Scarlet Spider:Ben Reilly,Kaine;Kaine:The Other;Superior Spider-Man;Spider-Man Noir;Spider-Punk;Pavitr Prabhakar;Spider-UK;Cosmic Spider-Man 2099;Venom:Agent Venom,Anti-Venom,Space Knight,King in Black,Cosmic Enhanced;Carnage:Absolute Carnage,King in Black,Red Goblin;Toxin;Sleeper;Hybrid;Knull;Wolverine:Weapon X,Old Man Logan,Horseman of Apocalypse,Phoenix,Hellverine,Weapon Omega,Age of Apocalypse;X-23:Wolverine,Talon;Daken:Dark Wolverine,Enhanced;Sabretooth:Weapon X,Age of Apocalypse,Exiles;Jean Grey:Phoenix,Dark Phoenix,White Phoenix,Phoenix Resurrection,Phoenix Five;Cyclops:Phoenix Five,Captain Commander,Age of Apocalypse;Storm:Omega-Level,Goddess of Thunder,Regent of Arakko,Bloodstorm,Eternal Storm;Magneto:Omega-Level,Age of Apocalypse,House of M,Full Power;Rogue:Carol Danvers Powers,Wonder Man Powers,Binary Powers,Apocalypse Enhanced;Gambit:New Sun,Death,Horseman;Colossus:Juggernaut,Phoenix Five,Cyttorak;Magik:Darkchylde,Phoenix Five,Sorceress Supreme,Limbo Queen;Cable:Techno-Organic,Askani Enhanced,Phoenix Force;Psylocke:Betsy Braddock,Kwannon,Captain Britain;Beast:Dark Beast,Age of Apocalypse,X-Force;Archangel;Archangel:Death,Apocalypse Enhanced;Nightcrawler;Bishop:Full Power;Warpath:Enhanced;Strong Guy:Absorption;Havok:Full Power;Legion;Legion:Full Power,God Mutant;Nate Grey;Nate Grey:Full Power,Shaman;Apocalypse;Apocalypse:Celestial Enhanced,Final Horseman;Cassandra Nova;Cassandra Nova:Full Power;Jamie Braddock;Jamie Braddock:Full Reality Manipulation;Franklin Richards;Franklin Richards:Adult,Full Power;Mister Sinister:Apocalypse Enhanced,Full Power;Selene:Full Power;Mister Fantastic:Maker,Ultimate Reed,Council of Reeds;Invisible Woman:Full Power,Malice;Human Torch:Nova,Supernova,Full Flame,Cosmic Flame;Thing:Angir,Immortal Thing,Full Power;She-Thing;Valeria Richards:Enhanced;Doctor Doom:Sorcerer,Infamous Iron Man,God Emperor,Cosmic Power,Battleworld,Beyonder Power;Molecule Man;Molecule Man:Full Power;Annihilus:Cosmic Control Rod,Full Power;Super-Skrull:Fantastic Four Powers,Enhanced;Terrax:Herald of Galactus;Dragon Man:Enhanced;Silver Surfer:Power Cosmic,Fallen One,Black,Full Power Cosmic;Adam Warlock:Soul Gem,Magus,Goddess,Infinity Enhanced;Beta Ray Bill:Stormbreaker,Thor Power,Full Power;Nova:Full Nova Force,Sam Alexander Full Power;Gladiator:Full Confidence,Majestor;Moondragon:Dragon of the Moon;Mantis:Celestial Madonna;Jack of Hearts:Full Power;Darkhawk:Full Armor;Starhawk;Thanos:Infinity Gauntlet,King Thanos,Phoenix,Death-Blessed,Cosmic Cube,Heart of the Universe,Astral Regulator;Thane:Phoenix,Death Seed;Ronan:Universal Weapon,Power Stone;Ebony Maw:Enhanced;Corvus Glaive:Enhanced;Proxima Midnight:Enhanced;Cull Obsidian:Enhanced;Supergiant:Enhanced;Galactus:Starving,Fed,Well-Fed,Lifebringer;Annihilus:Annihilation Wave;Dormammu:Full Power;Mephisto:Full Power;Shuma-Gorath:Full Power;Nightmare:Full Power;Ghost Rider:Zarathos,King of Hell,Cosmic Ghost Rider,Cosmic Robbie Reyes;Blade:Vampire Enhanced;Dracula:Lord of Vampires,Full Power;Morbius:Enhanced;Werewolf by Night:Enhanced;Satana:Full Power;Agatha Harkness:Full Power;Clea:Sorcerer Supreme,Dark Dimension;Wiccan:Demiurge;Doctor Voodoo:Sorcerer Supreme;Ancient One:Full Power;Daredevil:Shadowland,Hand Enhanced;Elektra:Hand Enhanced;Punisher:War Machine,Franken-Castle;Luke Cage:Enhanced;Iron Fist:Immortal Iron Fist,Phoenix Five;Jessica Jones:Enhanced;Taskmaster:Enhanced;Deathlok:Enhanced Cyborg;Black Cat:Probability Enhanced;Echo:Phoenix;Green Goblin:Goblin King,Red Goblin,Iron Patriot;Hobgoblin:Enhanced;Doctor Octopus:Superior Octopus,Superior Spider-Man;Electro:Full Power,Living Energy;Sandman:Full Power,Elemental;Lizard:Enhanced;Mysterio:Full Technology;Vulture:Enhanced;Kraven:Last Hunt;Kingpin:Enhanced;Scorpion:Enhanced;Rhino:Enhanced;Morlun;Morlun:Full Power;Karn;Solus;Verna;Kindred;Abomination:Enhanced;Leader:Gamma Enhanced,Full Intellect;A-Bomb;Skaar:Old Power;Amadeus Cho:Brawn;Titania:Enhanced;Absorbing Man:Cosmic Absorption,Power Absorption;Black Bolt:Full Voice,Full Power;Medusa:Full Power;Karnak:Full Potential;Crystal:Full Elemental;Lockjaw:Full Power;Gorgon:Enhanced;Maximus:Enhanced;Ahura:Future King;Ikaris:Eternal Enhanced;Thena:Eternal Warrior,Cosmic Enhanced;Gilgamesh:Eternal Enhanced;Kingo:Eternal Enhanced;Sersi:Matter Manipulation;Druig:Full Telepathy;Makkari:Full Speed;Phastos:Full Technology;Ajak:Eternal Enhanced;Kro:Deviant Enhanced;Ultron:Adamantium,Advanced,Age of Ultron,Phalanx,Ultron Sigma,Infinity Ultron;Deadpool:Weapon X,Zenpool,Venom Symbiote,Immortal Deadpool,Cosmic Deadpool,Wolverine Bonded;Domino:Probability Enhanced;Lady Deadpool:Enhanced";
+const DB=[];RAW.split(';').forEach(g=>{const[b,f]=g.split(':');(f?f.split(','):['']).forEach(x=>DB.push({n:b,f:x}))});
+const D={
+"Thor":"Asgardian Thunder God wielding Mjolnir, with godly strength and control of lightning and storms.",
+"Hulk":"Bruce Banner's gamma-irradiated alter ego, whose strength grows with his rage.",
+"Iron Man":"Genius billionaire Tony Stark in powered armor, master of technology and weapons.",
+"Captain America":"Steve Rogers, super-soldier and master tactician with his vibranium shield.",
+"Doctor Strange":"Master of the mystic arts and Earth's Sorcerer Supreme.",
+"Scarlet Witch":"Wanda Maximoff, a chaos-magic user able to warp reality itself.",
+"Captain Marvel":"Carol Danvers, a Kree-Human hybrid who flies, absorbs energy and fires photon blasts.",
+"Vision":"Synthezoid Avenger who can change his density, fly and fire solar beams.",
+"Black Panther":"T'Challa, king of Wakanda, with enhanced abilities, genius intellect and vibranium tech.",
+"Ant-Man":"Scientist hero who shrinks or grows using Pym Particles.",
+"Wasp":"Shrinking, flying hero with bio-electric stinger blasts.",
+"Sentry":"Robert Reynolds, a hero with the power of a million exploding suns, tied to the dark Void.",
+"Blue Marvel":"Adam Brashear, a genius with anti-matter powers and near-limitless strength.",
+"Hercules":"Olympian demigod and one of Marvel's strongest brawlers.",
+"She-Hulk":"Jennifer Walters, a gamma-powered lawyer with great strength.",
+"Red Hulk":"Thunderbolt Ross as a heat-radiating gamma monster that absorbs energy.",
+"Red She-Hulk":"Betty Ross as a gamma-powered, energy-absorbing red brawler.",
+"Ares":"Olympian God of War, a master of weapons and combat.",
+"Quasar":"Wielder of the Quantum Bands, able to project and shape cosmic energy constructs.",
+"Spectrum":"Monica Rambeau, who can turn into any form of energy on the electromagnetic spectrum.",
+"Starbrand":"Bearer of the Starbrand, a cosmic weapon of enormous destructive power.",
+"Namor":"Atlantean-Human mutant king of the seas with super strength and flight.",
+"Valkyrie":"Asgardian warrior who guides souls of the dead and fights with a legendary sword.",
+"Black Knight":"Dane Whitman, wielding the cursed Ebony Blade that cuts through almost anything.",
+"Moon Knight":"Marc Spector, vigilante empowered by the Egyptian moon god Khonshu.",
+"Shang-Chi":"Master of Kung Fu, one of the greatest martial artists in Marvel.",
+"Spider-Man":"Peter Parker, friendly neighborhood hero with spider strength, agility and spider-sense.",
+"Spider-Man 2099":"Miguel O'Hara, a geneticist hero from the future with fangs, talons and a webbing system.",
+"Miles Morales":"Teen Spider-Man with camouflage, invisibility and electric venom blasts.",
+"Ghost-Spider":"Gwen Stacy of another Earth, a fast, agile spider-hero.",
+"Spider-Woman":"Spider-powered heroine with flight, venom blasts and pheromone abilities.",
+"Silk":"Cindy Moon, bitten by the same spider as Peter, with a stronger spider-sense and organic webbing.",
+"Spider-Girl":"May Parker, daughter of Peter Parker from a future timeline, with spider powers.",
+"Scarlet Spider":"A Spider-Man clone-turned-hero with spider powers and a rough edge.",
+"Kaine":"Peter Parker's flawed clone, a strong and lethal spider-fighter.",
+"Superior Spider-Man":"Doctor Octopus's mind in Peter's body, using spider powers with ruthless efficiency.",
+"Spider-Man Noir":"Grim 1930s spider-hero who fights crime in a hard-boiled world.",
+"Spider-Punk":"Hobie Brown, a spider-hero who fights fascism with a guitar that shoots sound waves.",
+"Pavitr Prabhakar":"The Spider-Man of Mumbai, an agile spider-hero from India.",
+"Spider-UK":"Billy Braddock, a British spider-hero and member of the Captain Britain Corps.",
+"Cosmic Spider-Man 2099":"Miguel O'Hara empowered by cosmic energy in a future timeline.",
+"Venom":"Alien symbiote bonded to a host, granting strength, shapeshifting and webbing.",
+"Carnage":"A chaotic, blood-red symbiote with shapeshifting weapons.",
+"Toxin":"The symbiote offspring of Carnage bonded to a police officer.",
+"Sleeper":"A heavily armored symbiote-like predator.",
+"Hybrid":"A merger of multiple symbiotes into one powerful form.",
+"Knull":"God of the Abyss and creator of the symbiotes, commanding a dark army of them.",
+"Wolverine":"Logan, a mutant with claws, a healing factor and animal senses.",
+"X-23":"Laura Kinney, a clone of Wolverine with claws and a healing factor.",
+"Daken":"Wolverine's son, a manipulative fighter with claws, healing and pheromone control.",
+"Sabretooth":"Victor Creed, a savage mutant with claws and a regenerative healing factor.",
+"Jean Grey":"Powerful telepath and telekinetic, host of the cosmic Phoenix Force.",
+"Cyclops":"X-Men leader who fires powerful optic blasts and is a master tactician.",
+"Storm":"Ororo Munroe, an Omega-level mutant who controls weather.",
+"Magneto":"Master of magnetism and one of the world's most powerful mutants.",
+"Rogue":"Mutant who absorbs powers and memories through touch, with flight and super strength.",
+"Gambit":"Remy LeBeau, a thief who charges objects with kinetic energy.",
+"Colossus":"Piotr Rasputin, who turns his body to organic steel.",
+"Magik":"Illyana Rasputin, a teleporting sorceress and ruler of Limbo.",
+"Cable":"Nathan Summers, a time-traveling soldier with telepathy and telekinesis.",
+"Psylocke":"Telepath and psychic-blade wielding ninja.",
+"Beast":"Hank McCoy, a brilliant scientist with beastly strength and agility.",
+"Archangel":"Warren Worthington III, a winged mutant with steel-like feathers.",
+"Nightcrawler":"Teleporting blue-furred mutant and swashbuckler.",
+"Bishop":"Time-displaced mutant who absorbs energy and redirects it.",
+"Warpath":"Apache mutant with super strength, speed and enhanced senses.",
+"Strong Guy":"Guido Carosella, a mutant who stores kinetic energy as strength.",
+"Havok":"Alex Summers, who emits plasma blasts by absorbing cosmic radiation.",
+"Legion":"David Haller, a powerful mutant with multiple personalities, each with different powers.",
+"Nate Grey":"An alternate-reality mutant with vast telepathic and telekinetic power.",
+"Apocalypse":"En Sabah Nur, an immortal mutant who shapes matter and grows stronger by adapting.",
+"Cassandra Nova":"Charles Xavier's twin, a psionic villain who mimics any mutant power.",
+"Jamie Braddock":"Reality-warping mutant who can reshape the world with his mind.",
+"Franklin Richards":"Son of Reed and Sue Richards, an Omega-level mutant who can reshape reality.",
+"Mister Sinister":"Victorian-era geneticist villain with shapeshifting and regeneration.",
+"Selene":"Immortal sorceress and mutant who drains life energy and controls the dead.",
+"Mister Fantastic":"Reed Richards, a genius who can stretch his body.",
+"Invisible Woman":"Sue Storm, who turns invisible and creates force fields.",
+"Human Torch":"Johnny Storm, who bursts into flame and flies.",
+"Thing":"Ben Grimm, a rocky brawler with incredible strength and durability.",
+"She-Thing":"A powerful female version of the Thing with rocky strength.",
+"Valeria Richards":"Genius daughter of Reed and Sue Richards.",
+"Doctor Doom":"Victor Von Doom, genius scientist, sorcerer and ruler of Latveria.",
+"Molecule Man":"Owen Reece, who can control molecules and reshape matter.",
+"Annihilus":"Tyrant of the Negative Zone wielding the Cosmic Control Rod.",
+"Super-Skrull":"Shapeshifting alien warrior with the powers of the Fantastic Four.",
+"Terrax":"Tyrannus, a former Herald of Galactus with earth-shattering strength.",
+"Dragon Man":"A giant dragon-like android with flight and fire breath.",
+"Silver Surfer":"Norrin Radd, a former Herald of Galactus who wields the Power Cosmic on a surfboard.",
+"Adam Warlock":"Cosmic being who wields the Soul Gem and other powerful energies.",
+"Beta Ray Bill":"Alien warrior who wields Stormbreaker and was found worthy of Thor's power.",
+"Nova":"Cosmic hero with the Nova Force, capable of flight and energy projection.",
+"Gladiator":"Kallark, Majestor of the Shi'ar Empire, with flight, strength and energy blasts.",
+"Moondragon":"Telepathic martial artist and philosopher with immense psychic powers.",
+"Mantis":"Celestial Madonna and martial artist with empathic and plant powers.",
+"Jack of Hearts":"Hero with a cosmic energy body that he can channel as blasts.",
+"Darkhawk":"Chris Powell, wearing an alien armor that can fly and fire energy blasts.",
+"Starhawk":"Cosmic warrior with energy manipulation and enhanced abilities.",
+"Thanos":"The Mad Titan, cosmic conqueror obsessed with death and power.",
+"Thane":"Thanos's son, an Olympian-Titan hybrid with cosmic power.",
+"Ronan":"Kree Accuser and warrior armed with a universal weapon.",
+"Ebony Maw":"Black Order sorcerer with telekinesis and mind control.",
+"Corvus Glaive":"Black Order warrior with a near-invulnerable blade.",
+"Proxima Midnight":"Black Order assassin with a spear that creates deadly energy.",
+"Cull Obsidian":"Black Order brute with incredible strength and toughness.",
+"Supergiant":"Black Order member who can grow to giant size and manipulate gravity.",
+"Galactus":"World-devourer, a cosmic being who consumes planets to survive.",
+"Dormammu":"Ruler of the Dark Dimension and a powerful magic-wielding foe of Doctor Strange.",
+"Mephisto":"Demonic lord who trades in souls and warps reality.",
+"Shuma-Gorath":"Tentacled ancient demon-god from beyond dimensions.",
+"Nightmare":"Lord of the Dream Dimension, who feeds on fear and controls dreams.",
+"Ghost Rider":"Flaming-skulled spirit of vengeance, able to burn away evil.",
+"Blade":"Half-vampire vampire hunter with vampire strengths and no weaknesses.",
+"Dracula":"Lord of Vampires, a sorcerer with mind control and immortal strength.",
+"Morbius":"Living vampire with super strength, flight and blood-drain.",
+"Werewolf by Night":"Jack Russell, a werewolf with strength, speed and healing.",
+"Satana":"Demon princess with sorcery and seduction powers.",
+"Agatha Harkness":"Witch and master of dark magic with knowledge of the Darkhold.",
+"Clea":"Sorceress of the Dark Dimension and Doctor Strange's ally.",
+"Wiccan":"Billy Kaplan, a reality-warping magician with spellcasting and flight.",
+"Doctor Voodoo":"Jericho Drumm, a master of voodoo magic and spirit summoning.",
+"Ancient One":"The former Sorcerer Supreme and master of the mystic arts.",
+"Daredevil":"Matt Murdock, a blind lawyer-vigilante with radar sense and martial arts skills.",
+"Elektra":"Assassin and ninja master with martial arts skills and a sai.",
+"Punisher":"Frank Castle, a vigilante armed with firearms and tactics.",
+"Luke Cage":"Hero for Hire with unbreakable skin and super strength.",
+"Iron Fist":"Danny Rand, a martial artist who channels chi through his fist.",
+"Jessica Jones":"Super-strong private investigator with limited flight.",
+"Taskmaster":"Photographic reflexes mimic any fighting style he sees.",
+"Deathlok":"Cyborg soldier with weapons and enhanced combat computers.",
+"Black Cat":"Felicia Hardy, a thief with bad-luck probability powers.",
+"Echo":"Maya Lopez, a deaf martial artist who copies any skill she sees.",
+"Green Goblin":"Norman Osborn, a madman with goblin gliders, pumpkin bombs and enhanced strength.",
+"Hobgoblin":"Spider-Man foe using goblin tech and enhanced strength.",
+"Doctor Octopus":"Otto Octavius, a genius scientist with four mechanical arms.",
+"Electro":"Max Dillon, who generates and controls electricity.",
+"Sandman":"Flint Marko, who can turn his body to sand.",
+"Lizard":"Curt Connors, a scientist who becomes a giant reptile with regeneration.",
+"Mysterio":"Quentin Beck, a special-effects master who uses illusions.",
+"Vulture":"Adrian Toomes, a flying villain in an electromagnetic wing suit.",
+"Kraven":"Sergei Kravinoff, a big-game hunter with enhanced strength and tracking.",
+"Kingpin":"Wilson Fisk, a crime lord with massive strength and tactical brilliance.",
+"Scorpion":"Mac Gargan, a villain in a scorpion suit with a strong tail.",
+"Rhino":"Aleksei Sytsevich, a brute in a nearly indestructible suit.",
+"Morlun":"A predator that hunts spider-totems and feeds on life force.",
+"Karn":"A powerful spider-predator, and one of the Inheritors.",
+"Solus":"An Inheritor who hunts spider-totems and feeds on life energy.",
+"Verna":"An Inheritor and spider-hunter with the power of a hunter.",
+"Kindred":"Demonic Spider-Man foe with dark magic and soul manipulation.",
+"Abomination":"Emil Blonsky, a gamma-powered brute with strong armor-like skin.",
+"Leader":"Samuel Sterns, a gamma genius with vast intelligence.",
+"A-Bomb":"Rick Jones as a blue gamma-powered brute.",
+"Skaar":"Hulk's son, a savage warrior with a gamma-powered body.",
+"Amadeus Cho":"Genius who becomes Hulk-powered, with the gamma-powered Brawn form.",
+"Titania":"Mary MacPherran, a powerful super-strong brawler.",
+"Absorbing Man":"Carl Creel, who absorbs the properties of any material he touches.",
+"Black Bolt":"King of the Inhumans whose voice can level cities.",
+"Medusa":"Inhuman queen who controls her hair as a weapon.",
+"Karnak":"Inhuman who can spot the weak point in anything.",
+"Crystal":"Inhuman princess who controls the four elements.",
+"Lockjaw":"Giant teleporting dog of the Inhumans.",
+"Gorgon":"Inhuman with hooves that create earthquakes.",
+"Maximus":"Genius Inhuman schemer with mind control.",
+"Ahura":"Son of Black Bolt and Medusa, a future Inhuman king.",
+"Ikaris":"Eternal warrior with flight, cosmic energy blasts and enhanced strength.",
+"Thena":"Eternal warrior goddess with cosmic energy weapons.",
+"Gilgamesh":"Eternal warrior of immense strength, called the Forgotten One.",
+"Kingo":"Eternal who fires cosmic energy blasts and works as an actor.",
+"Sersi":"Eternal who transmutes matter.",
+"Druig":"Eternal with mind-control abilities.",
+"Makkari":"The fastest Eternal, able to move at incredible speeds.",
+"Phastos":"Eternal inventor and master of technology.",
+"Ajak":"Eternal leader who communicates with the Celestials and heals.",
+"Kro":"Deviant leader with shapeshifting and immense strength.",
+"Ultron":"Robotic AI villain who builds armies and seeks to wipe out humanity.",
+"Deadpool":"Wade Wilson, the Merc with a Mouth, with a healing factor and expert combat skills.",
+"Domino":"Mercenary whose mutation gives her luck-shifting probability powers.",
+"Lady Deadpool":"An alternate female Deadpool with a healing factor and mercenary skills."};
+
+const F={};`Thor:King Thor|Thor ruling Asgard as king, with godly strength, Mjolnir and lightning.
+Thor:Old King Thor|Aged, battle-scarred future king of Asgard, still immensely powerful with Mjolnir.
+Thor:All-Father Thor|Thor as All-Father, wielding the Odinforce and command of Asgard's might.
+Thor:Herald of Galactus|Thor serving as Galactus's herald, wielding cosmic power to find worlds to devour.
+Thor:All-Black Thor|Thor wielding the All-Black, a god-killing weapon born from the symbiote god Knull.
+Thor:All-Black King Thor|Thor as king wielding the All-Black, pairing royal authority with god-killing power.
+Thor:Rune King Thor|Future Thor wearing the Rune King mantle, armed with Mjolnir and rune magic.
+Hulk:Professor Hulk|Banner's intellect fused with Hulk's strength: a genius with gamma-powered might.
+Hulk:World War Hulk|Hulk returned from exile for vengeance, at peak fury and strength.
+Hulk:World Breaker Hulk|Hulk at Worldbreaker power, whose strength can shake planets.
+Hulk:Immortal Hulk|A Hulk who returns from death each night, growing stronger in darkness.
+Hulk:Devil Hulk|The cruel, deep-voiced Hulk personality, terrifying and cunning.
+Hulk:Titan Hulk|Hulk at titan scale, a towering gamma-charged brute.
+Hulk:Maestro|Future tyrant Hulk with vast strength and intellect, ruling a ruined world.
+Hulk:Breaker of Worlds|Hulk at his most destructive, with strength on a planet-shattering scale.
+Iron Man:Extremis|Tony Stark with the Extremis virus, linking his body directly to armor and networks.
+Iron Man:Bleeding Edge|Stark's Bleeding Edge armor, stored in his body and deployed as nanotech.
+Iron Man:Model Prime|Refined Iron Man armor with advanced tech and strong weapon systems.
+Iron Man:Superior Iron Man|A ruthless, arrogant Stark in advanced Extremis-powered armor.
+Iron Man:Godkiller|Iron Man armor built specifically to fight gods, with heavy weaponry.
+Iron Man:Godbuster|Heavily armed Iron Man armor designed to take down godlike foes.
+Iron Man:Thorbuster|Iron Man armor built to counter Thor, hard-hitting and built to endure lightning.
+Captain America:Mjolnir|Steve Rogers found worthy to wield Mjolnir, pairing shield skill with Thor's power.
+Captain America:Hydra Supreme|Steve Rogers as Hydra's Supreme leader in an altered reality, a tactician and fighter.
+Doctor Strange:Sorcerer Supreme|Stephen Strange as Earth's master of the mystic arts.
+Doctor Strange:Black Priest|A dark-magic Strange, more ruthless and steeped in forbidden sorcery.
+Doctor Strange:God of Magic|Strange elevated to a magic deity with vast spellcasting power.
+Doctor Strange:Multiverse Strange|Strange casting across the multiverse, drawing magic from many realities.
+Doctor Strange:Strange Supreme|An alternate Strange who absorbed vast mystic power and became a Supreme Being.
+Scarlet Witch:Chaos Magic|Wanda casting chaos magic that bends probability and reality.
+Scarlet Witch:House of M|Wanda reshaping reality into the mutant-ruled world of House of M.
+Scarlet Witch:Life Force|Wanda drawing on life-force energy to fuel reality-altering magic.
+Scarlet Witch:Darkhold|Wanda wielding the Darkhold's dark, corrupting magic.
+Scarlet Witch:Multiversal Wanda|Wanda using reality-warping magic across the multiverse.
+Captain Marvel:Binary|Carol as Binary, with the star-power of a white hole for flight and energy blasts.
+Captain Marvel:Warbird|Carol as Warbird, a flying fighter with strength and photon blasts.
+Captain Marvel:Cosmic-Enhanced|Carol at cosmic-level power, with intense photon blasts and flight.
+Vision:Solar Jewel|Vision with a solar jewel, projecting solar energy and shifting his density.
+Vision:White Vision|Vision rebuilt as a white, emotionless android with stealth and combat programming.
+Vision:Infinity Stone Vision|Vision with an Infinity Stone in his forehead, wielding immense energy power.
+Vision:House of M Vision|Vision from House of M's reality, a synthetic hero in Wanda's rewritten world.
+Black Panther:Enhanced Heart-Shaped Herb|T'Challa boosted by the herb, with peak strength, senses and agility.
+Black Panther:Necropolis-Enhanced|T'Challa empowered by Necropolis's dark energy for superhuman abilities.
+Black Panther:Intergalactic Empire|T'Challa as emperor of Wakanda's space empire, with advanced tech and command.
+Ant-Man:Giant-Man|Pym growing to enormous size with great strength.
+Ant-Man:Quantum-Enhanced|Ant-Man with quantum-realm power, shrinking to subatomic scales.
+Wasp:Janet van Dyne|The original Wasp: shrinking, flying, with bio-electric stings.
+Wasp:Hope van Dyne|Hope as Wasp: shrinking, flight, photon stings and skilled combat.
+Sentry:Golden Sentry|Sentry as the golden hero with the power of a million exploding suns.
+Sentry:Void|Sentry's dark alter ego, a destructive force of darkness and terror.
+Sentry:Merged Sentry/Void|Sentry and Void combined, holding light and dark power at once.
+Sentry:Death Seed|Sentry corrupted by the Death Seed, twisted and dangerous.
+Blue Marvel:Anti-Matter Enhanced|Adam Brashear with amplified anti-matter powers: flight, strength and energy control.
+Hercules:Godly Hercules|Hercules at godly power, one of Olympus's strongest.
+Hercules:Full Olympian Power|Hercules at peak Olympian strength and durability.
+She-Hulk:Savage|Savage She-Hulk, more primal and stronger, with less restraint.
+She-Hulk:Immortal|She-Hulk with immortal-like resilience and regeneration.
+Red Hulk:Full Power|Red Hulk at peak: radiation, heat and energy absorption.
+Ares:God of War|Olympian god of war, a master of weapons and battle.
+Quasar:Full Quantum Bands|Quasar with full Quantum Bands, making cosmic energy constructs and flying.
+Spectrum:Full Energy Form|Monica Rambeau fully transforming into any form of energy.
+Starbrand:Full Power|Starbrand at full power, capable of near-cosmic destruction.
+Namor:King of Atlantis|Namor as Atlantean king, with strength, flight and command of the seas.
+Namor:Phoenix-Enhanced|Namor boosted by Phoenix Force power, with cosmic-level energy.
+Valkyrie:King Valkyrie|Valkyrie ruling as monarch, with Asgardian strength and warrior skill.
+Black Knight:Ebony Blade|Dane Whitman wielding the Ebony Blade, which cuts through almost anything.
+Moon Knight:Khonshu|Moon Knight as Khonshu's avatar, with god-given strength and skill.
+Moon Knight:Phoenix|Moon Knight empowered by the Phoenix Force.
+Shang-Chi:Ten Rings|Shang-Chi wielding the Ten Rings for energy blasts and defense.
+Shang-Chi:Master of Kung Fu|Shang-Chi at peak martial-arts mastery.
+Spider-Man:Symbiote|Peter in the black symbiote suit, with enhanced strength and more aggression.
+Spider-Man:The Other|Spider-Man empowered by The Other: faster, with a stinger and regeneration.
+Spider-Man:Cosmic|Peter with cosmic power, boosting his strength and adding energy abilities.
+Spider-Man:Captain Universe|Peter wielding the Uni-Power: cosmic strength, flight and energy.
+Spider-Man:Spider-Hulk|Spider-Man with Hulk-scale gamma strength.
+Spider-Man:Last Stand|Peter's final stand: total resolve, using every trick and power he has.
+Spider-Man:House of M|Spider-Man from the House of M world, with altered heroic status.
+Spider-Man 2099:Enhanced|Miguel O'Hara with enhanced strength, speed, talons and future tech.
+Miles Morales:Venom Blast|Miles firing bio-electric venom blasts alongside camouflage.
+Miles Morales:King in Black|Miles fighting in the King in Black event, with venom and camouflage powers.
+Spider-Woman:Jessica Drew|The original Spider-Woman: venom blasts, flight and pheromones.
+Spider-Woman:Julia Carpenter|Arachne, with psionic webbing and spider strength.
+Spider-Girl:Mayday Parker|Peter's daughter from a future timeline, with spider powers.
+Scarlet Spider:Ben Reilly|Peter's clone, a skilled hero with spider powers.
+Scarlet Spider:Kaine|Kaine as Scarlet Spider, a rough-edged clone with a stinger and strong healing.
+Kaine:The Other|Kaine empowered by The Other: regeneration and a stinger.
+Venom:Agent Venom|Flash Thompson with Venom for government missions, backed by military skill.
+Venom:Anti-Venom|Eddie Brock as Anti-Venom, a healing, symbiote-cleansing being.
+Venom:Space Knight|Venom serving as a Space Knight in cosmic armor.
+Venom:King in Black|Venom under Knull's cosmic empowerment, enlarged and dangerous.
+Venom:Cosmic Enhanced|Venom boosted with cosmic power, stronger and more dangerous.
+Carnage:Absolute Carnage|Carnage in his absolute form: a killing-spree symbiote with strength and shapeshifting.
+Carnage:King in Black|Carnage in the King in Black storyline, tied to Knull's power.
+Carnage:Red Goblin|Carnage merged with Norman Osborn's Green Goblin: goblin gear plus symbiote.
+Wolverine:Weapon X|Wolverine as Weapon X: adamantium claws and a healing factor.
+Wolverine:Old Man Logan|Aged Logan from a dystopian future, lethal and haunted.
+Wolverine:Horseman of Apocalypse|Wolverine as Apocalypse's Death horseman, brutal and rebuilt.
+Wolverine:Phoenix|Wolverine wielding the Phoenix Force, empowered by cosmic fire.
+Wolverine:Hellverine|Wolverine turned demon-empowered, charged with hellfire.
+Wolverine:Weapon Omega|Wolverine at Weapon Omega power, with immense strength.
+Wolverine:Age of Apocalypse|Age of Apocalypse Wolverine, a hardened fighter from Apocalypse's world.
+X-23:Wolverine|Laura wearing the Wolverine mantle, with claws and a healing factor.
+X-23:Talon|X-23 as a Talon: an assassin with claws and healing.
+Daken:Dark Wolverine|Daken as Dark Wolverine: deadly, manipulative, with claws and healing.
+Daken:Enhanced|Daken with stronger claws, healing and pheromones.
+Sabretooth:Weapon X|Sabretooth as a Weapon X subject: ruthless, clawed, with a healing factor.
+Sabretooth:Age of Apocalypse|Age of Apocalypse Sabretooth, a brutal predator in Apocalypse's regime.
+Sabretooth:Exiles|Sabretooth as a member of the Exiles, fighting across realities.
+Jean Grey:Phoenix|Jean as the Phoenix, with cosmic fire, telepathy and telekinesis.
+Jean Grey:Dark Phoenix|Jean corrupted by Phoenix power, destructive and cosmic.
+Jean Grey:White Phoenix|Jean as White Phoenix of the Crown, at ultimate cosmic power.
+Jean Grey:Phoenix Resurrection|Jean reborn by the Phoenix, with renewed cosmic force.
+Jean Grey:Phoenix Five|Jean sharing Phoenix Force power with four others.
+Cyclops:Phoenix Five|Scott empowered by the Phoenix Force, with cosmic-level optic blasts.
+Cyclops:Captain Commander|Scott commanding the X-Men, a master tactician with strong optic blasts.
+Cyclops:Age of Apocalypse|Age of Apocalypse Cyclops, a battle-hardened optic-blast wielder.
+Storm:Omega-Level|Storm at Omega-level control of the weather.
+Storm:Goddess of Thunder|Storm as a weather goddess, wielding lightning at will.
+Storm:Regent of Arakko|Storm ruling Arakko, the mutant land, as a strong leader.
+Storm:Bloodstorm|Storm as a vampire, pairing weather power with predatory strength.
+Storm:Eternal Storm|Storm as an everlasting force, with unending storms at her command.
+Magneto:Omega-Level|Magneto at Omega-level magnetism.
+Magneto:Age of Apocalypse|Age of Apocalypse Magneto, a strong leader of the X-Men.
+Magneto:House of M|Magneto as ruler of the House of M world.
+Magneto:Full Power|Magneto at peak magnetic command.
+Rogue:Carol Danvers Powers|Rogue with Carol's flight, strength and durability.
+Rogue:Wonder Man Powers|Rogue with Wonder Man's strength and ionic energy.
+Rogue:Binary Powers|Rogue holding Binary's star-power energy.
+Rogue:Apocalypse Enhanced|Rogue boosted by Apocalypse's technology.
+Gambit:New Sun|Gambit with amplified charging power, turning objects into kinetic bombs.
+Gambit:Death|Gambit as the Death Horseman, a lethal kinetic force.
+Gambit:Horseman|Gambit as a Horseman of Apocalypse, a lethal charging thief.
+Colossus:Juggernaut|Colossus as Cyttorak's Juggernaut, with huge unstoppable strength.
+Colossus:Phoenix Five|Colossus with Phoenix power and organic steel.
+Colossus:Cyttorak|Colossus bearing Cyttorak's power: unstoppable and nearly indestructible.
+Magik:Darkchylde|Magik with dark Limbo power and her soulsword.
+Magik:Phoenix Five|Magik with Phoenix power and magic.
+Magik:Sorceress Supreme|Magik as top sorcerer, with spells and teleportation.
+Magik:Limbo Queen|Magik ruling Limbo, with teleportation and her soulsword.
+Cable:Techno-Organic|Cable with the techno-virus and telekinesis.
+Cable:Askani Enhanced|Cable boosted by Askani teachings, more psionic.
+Cable:Phoenix Force|Cable wielding the Phoenix Force.
+Psylocke:Betsy Braddock|Original Psylocke: telepath, psychic knife and ninja.
+Psylocke:Kwannon|Kwannon, a telepathic assassin, in Psylocke's body.
+Psylocke:Captain Britain|Psylocke as Captain Britain, with flight and strength.
+Beast:Dark Beast|An evil Beast from another reality, a genius geneticist.
+Beast:Age of Apocalypse|Age of Apocalypse Beast, savage in Apocalypse's world.
+Beast:X-Force|Beast on X-Force, a ruthless scientist.
+Archangel:Death|Archangel as Death Horseman, with blade wings.
+Archangel:Apocalypse Enhanced|Archangel boosted by Apocalypse, with metal wings and lethal skill.
+Bishop:Full Power|Bishop absorbing and redirecting energy at peak.
+Warpath:Enhanced|Warpath with amplified strength and senses.
+Strong Guy:Absorption|Strong Guy converting kinetic energy into strength.
+Havok:Full Power|Havok's plasma blasts at maximum.
+Legion:Full Power|Legion using all his personalities' powers.
+Legion:God Mutant|Legion at godlike, reality-bending power.
+Nate Grey:Full Power|Nate at maximum telekinesis and telepathy.
+Nate Grey:Shaman|Nate Grey as a shamanic energy wielder.
+Apocalypse:Celestial Enhanced|Apocalypse boosted by Celestial tech, bigger and stronger.
+Apocalypse:Final Horseman|Apocalypse as his own final Horseman.
+Cassandra Nova:Full Power|Cassandra at peak psionic power.
+Jamie Braddock:Full Reality Manipulation|Jamie with full reality-warping ability.
+Franklin Richards:Adult|Grown Franklin with mature reality-warping power.
+Franklin Richards:Full Power|Franklin at maximum reality manipulation.
+Mister Sinister:Apocalypse Enhanced|Sinister empowered by Apocalypse's boosts.
+Mister Sinister:Full Power|Sinister at peak genetics and regeneration.
+Selene:Full Power|Selene at peak, draining life and commanding the dead.
+Mister Fantastic:Maker|Reed as the Maker, a ruthless genius wielding advanced tech.
+Mister Fantastic:Ultimate Reed|Ultimate Reed, a cold genius using dangerous tech.
+Mister Fantastic:Council of Reeds|Reed as one of the Council of Reeds, a network of geniuses.
+Invisible Woman:Full Power|Sue at peak, with strong force fields.
+Invisible Woman:Malice|Sue as Malice, a dark psychic version.
+Human Torch:Nova|Johnny's flame at nova intensity: a sudden, blinding burst of heat.
+Human Torch:Supernova|Johnny's flame at stellar scale, hot enough to rival a star's explosion.
+Human Torch:Full Flame|Johnny with unrestrained flame: flight, fireballs and total heat control.
+Human Torch:Cosmic Flame|Johnny's fire boosted with cosmic energy, hotter and more destructive.
+Thing:Angir|Ben Grimm in the Angir form, a rock-hided brawler with heavy strength.
+Thing:Immortal Thing|Ben Grimm as a Thing who cannot stay dead, with rocky strength and durability.
+Thing:Full Power|Ben Grimm at peak: his greatest rock-hided strength and durability.
+Valeria Richards:Enhanced|Reed and Sue's daughter with boosted genius intellect and inventive tech.
+Doctor Doom:Sorcerer|Doom relying on his sorcery, casting spells beside his scientific genius.
+Doctor Doom:Infamous Iron Man|Doom taking on the Iron Man role in armor, a genius with heavy tech.
+Doctor Doom:God Emperor|Doom as God Emperor, ruling with godlike power and total authority.
+Doctor Doom:Cosmic Power|Doom boosted with cosmic energy on top of his tech and sorcery.
+Doctor Doom:Battleworld|Doom as god of Battleworld, controlling a patchwork world he made.
+Doctor Doom:Beyonder Power|Doom holding the Beyonder's reality-warping power, able to create and alter matter.
+Molecule Man:Full Power|Owen at peak matter control.
+Annihilus:Cosmic Control Rod|Annihilus wielding the Cosmic Control Rod, which lets him extend life and channel cosmic energy.
+Annihilus:Full Power|Annihilus at peak: an armored Negative Zone tyrant with the Rod's full energy.
+Super-Skrull:Fantastic Four Powers|A shapeshifting Skrull with the powers of Reed, Sue, Johnny and Ben.
+Super-Skrull:Enhanced|Super-Skrull with amplified Fantastic Four powers and stronger shapeshifting.
+Terrax:Herald of Galactus|Terrax as Galactus's herald, using a cosmic axe and earth-shattering strength.
+Dragon Man:Enhanced|Dragon Man with boosted strength, flight and fire breath.
+Silver Surfer:Power Cosmic|The Surfer wielding the Power Cosmic on his board.
+Silver Surfer:Fallen One|The Surfer in a fallen, more tragic state, still wielding cosmic power.
+Silver Surfer:Black|The Surfer in a dark, black form, with the Power Cosmic taking a darker edge.
+Silver Surfer:Full Power Cosmic|The Surfer with the Power Cosmic at full strength: energy blasts, flight and matter manipulation.
+Adam Warlock:Soul Gem|Adam wielding the Soul Gem, able to absorb and steal souls.
+Adam Warlock:Magus|Adam's evil future self, a cosmic tyrant with vast power.
+Adam Warlock:Goddess|Adam in his Goddess persona, a pure-energy cosmic being.
+Adam Warlock:Infinity Enhanced|Adam boosted by Infinity Gem power on top of his cosmic abilities.
+Beta Ray Bill:Stormbreaker|Bill wielding Stormbreaker, a hammer-like axe with god-level power.
+Beta Ray Bill:Thor Power|Bill holding Thor's power, with lightning and storm control.
+Beta Ray Bill:Full Power|Bill at peak: a cyborg warrior with Asgardian-level strength and weapons.
+Nova:Full Nova Force|A Nova hero with the full Nova Force: flight, energy blasts and cosmic strength.
+Nova:Sam Alexander Full Power|Sam Alexander at max power: helmeted flight and strong energy blasts.
+Gladiator:Full Confidence|Gladiator at peak Shi'ar strength, flight and energy blasts, backed by his confidence.
+Gladiator:Majestor|Gladiator ruling as Majestor of the Shi'ar Empire, with strength, flight and energy beams.
+Moondragon:Dragon of the Moon|Moondragon as the Dragon of the Moon, with immense psychic power.
+Mantis:Celestial Madonna|Mantis as the Celestial Madonna, with empathic and plant powers.
+Jack of Hearts:Full Power|Jack of Hearts at full power, channeling cosmic energy from his body.
+Darkhawk:Full Armor|Darkhawk in full armor, flying and firing energy blasts.
+Thanos:Infinity Gauntlet|Thanos wielding all six Infinity Stones, with reality control.
+Thanos:King Thanos|Thanos as ruler of a conquered domain, using his vast strength and tactics.
+Thanos:Phoenix|Thanos wielding the Phoenix Force, adding cosmic fire to his power.
+Thanos:Death-Blessed|Thanos empowered by Death's favor, near-immortal and hard to kill.
+Thanos:Cosmic Cube|Thanos wielding the Cosmic Cube's reality-warping power.
+Thanos:Heart of the Universe|Thanos with the Heart of the Universe, a mystical source of power.
+Thanos:Astral Regulator|Thanos with the Astral Regulator, a cosmic power source.
+Thane:Phoenix|Thanos's son with the Phoenix Force, cosmic fire added.
+Thane:Death Seed|Thane corrupted by the Death Seed, dark and destructive.
+Ronan:Universal Weapon|Ronan wielding the Universal Weapon, a hammer with cosmic power.
+Ronan:Power Stone|Ronan wielding the Power Stone, with strength far beyond normal.
+Ebony Maw:Enhanced|Ebony Maw with stronger telekinesis and mind control.
+Corvus Glaive:Enhanced|Corvus Glaive with a boosted, near-invulnerable blade.
+Proxima Midnight:Enhanced|Proxima Midnight with a boosted spear and deadly speed.
+Cull Obsidian:Enhanced|Cull Obsidian with amplified strength and toughness.
+Supergiant:Enhanced|Supergiant with boosted size-growth and gravity control.
+Galactus:Starving|Galactus starving: weakened by hunger, desperate and dangerous.
+Galactus:Fed|Galactus after feeding: solid cosmic strength.
+Galactus:Well-Fed|Galactus well-fed, at peak cosmic power with vast energy.
+Galactus:Lifebringer|Galactus as Lifebringer, creating life instead of devouring worlds.
+Annihilus:Annihilation Wave|Annihilus leading the Annihilation Wave, a huge invasion force from the Negative Zone.
+Dormammu:Full Power|Dormammu at full power: ruler of the Dark Dimension with vast magic.
+Mephisto:Full Power|Mephisto at full power: a demonic lord of souls who warps reality.
+Shuma-Gorath:Full Power|Shuma-Gorath at full power: a tentacled ancient demon-god from beyond.
+Nightmare:Full Power|Nightmare at full power: lord of the Dream Dimension who feeds on fear.
+Ghost Rider:Zarathos|Ghost Rider bound to the demon Zarathos, with hellfire and vengeance.
+Ghost Rider:King of Hell|Ghost Rider as King of Hell, ruling the underworld with fire.
+Ghost Rider:Cosmic Ghost Rider|A cosmic Ghost Rider with vast power and time-travel ties.
+Ghost Rider:Cosmic Robbie Reyes|Robbie Reyes with cosmic Ghost Rider power.
+Blade:Vampire Enhanced|Blade with enhanced vampire strengths and no weaknesses.
+Dracula:Lord of Vampires|Dracula as Lord of Vampires, a sorcerer with mind control and immortal strength.
+Dracula:Full Power|Dracula at full power, with shapeshifting, immense strength and hypnosis.
+Morbius:Enhanced|Morbius with boosted strength, flight and blood-drain.
+Werewolf by Night:Enhanced|Werewolf by Night with amplified strength, speed and healing.
+Satana:Full Power|Satana at full power: demonic sorcery and seduction.
+Agatha Harkness:Full Power|Agatha at full power: a witch with dark magic and Darkhold knowledge.
+Clea:Sorcerer Supreme|Clea as Sorcerer Supreme, with Dark Dimension magic.
+Clea:Dark Dimension|Clea ruling the Dark Dimension with mystic power.
+Wiccan:Demiurge|Wiccan as Demiurge, a reality-warping magician.
+Doctor Voodoo:Sorcerer Supreme|Doctor Voodoo as Sorcerer Supreme, with voodoo magic and spirit power.
+Ancient One:Full Power|The Ancient One at full power: master of the mystic arts.
+Daredevil:Shadowland|Daredevil leading the Hand in Shadowland, with radar sense and martial skill.
+Daredevil:Hand Enhanced|Daredevil boosted by the Hand's training and energies.
+Elektra:Hand Enhanced|Elektra boosted by the Hand: a lethal ninja with sai.
+Punisher:War Machine|Punisher in War Machine armor with heavy firepower.
+Punisher:Franken-Castle|Punisher as Franken-Castle, a stitched-together monster with superhuman strength.
+Luke Cage:Enhanced|Luke Cage with amplified strength and unbreakable skin.
+Iron Fist:Immortal Iron Fist|Iron Fist at peak, with chi-charged strikes and martial arts.
+Iron Fist:Phoenix Five|Iron Fist with Phoenix power added to his chi.
+Jessica Jones:Enhanced|Jessica Jones with boosted strength and flight.
+Taskmaster:Enhanced|Taskmaster with stronger reflexes for copying fighting styles.
+Deathlok:Enhanced Cyborg|Deathlok with boosted cyborg weapons and combat computers.
+Black Cat:Probability Enhanced|Black Cat with amplified bad-luck probability powers.
+Echo:Phoenix|Echo with Phoenix power on top of her copied fighting skills.
+Green Goblin:Goblin King|Green Goblin ruling as Goblin King, with goblin gliders and strength.
+Green Goblin:Red Goblin|Norman merged with Carnage's symbiote: goblin gear plus symbiote.
+Green Goblin:Iron Patriot|Norman Osborn in Iron Patriot armor, a tech-armed Goblin.
+Hobgoblin:Enhanced|Hobgoblin with stronger goblin tech and strength.
+Doctor Octopus:Superior Octopus|Doc Ock as Superior Octopus: a genius with stronger mechanical arms.
+Doctor Octopus:Superior Spider-Man|Doc Ock in Peter's body as Superior Spider-Man.
+Electro:Full Power|Electro at full power, generating huge electric blasts.
+Electro:Living Energy|Electro as a living energy being that flies and controls electricity.
+Sandman:Full Power|Sandman at full power, shifting into a huge sand form.
+Sandman:Elemental|Sandman as elemental sand with vast size and control.
+Lizard:Enhanced|Lizard with amplified strength and regeneration.
+Mysterio:Full Technology|Mysterio using full technology for illusions.
+Vulture:Enhanced|Vulture with a stronger flight suit.
+Kraven:Last Hunt|Kraven on his Last Hunt, obsessive and dangerous.
+Kingpin:Enhanced|Kingpin with boosted strength and tactics.
+Scorpion:Enhanced|Scorpion with a stronger armored tail.
+Rhino:Enhanced|Rhino with a stronger, nearly indestructible suit.
+Morlun:Full Power|Morlun fully fed: superhuman strength and speed that hunts spider-totems.
+Abomination:Enhanced|Abomination with boosted gamma strength and tough skin.
+Leader:Gamma Enhanced|Leader with gamma-boosted intellect and strength.
+Leader:Full Intellect|Leader at full intellect, a scheming gamma genius.
+Skaar:Old Power|Skaar with Old Power: a savage warrior with immense strength.
+Amadeus Cho:Brawn|Amadeus Cho as Brawn: a genius with Hulk-level gamma strength.
+Titania:Enhanced|Titania with amplified strength.
+Absorbing Man:Cosmic Absorption|Absorbing Man absorbing cosmic energy and materials.
+Absorbing Man:Power Absorption|Absorbing Man absorbing other people's powers.
+Black Bolt:Full Voice|Black Bolt unleashing his full voice: a city-leveling scream.
+Black Bolt:Full Power|Black Bolt at full power, with strength and a devastating voice.
+Medusa:Full Power|Medusa at full power, using her hair as a weapon.
+Karnak:Full Potential|Karnak at full potential, seeing any weak point.
+Crystal:Full Elemental|Crystal at full command of all four elements.
+Lockjaw:Full Power|Lockjaw at full power, teleporting.
+Gorgon:Enhanced|Gorgon with stronger hooves that shake the ground.
+Maximus:Enhanced|Maximus with sharper mind-control abilities.
+Ahura:Future King|Ahura as a future Inhuman king.
+Ikaris:Eternal Enhanced|Ikaris with boosted flight and cosmic energy.
+Thena:Eternal Warrior|Thena as Eternal warrior, using cosmic energy weapons.
+Thena:Cosmic Enhanced|Thena with cosmic power added.
+Gilgamesh:Eternal Enhanced|Gilgamesh with boosted strength, called the Forgotten One.
+Kingo:Eternal Enhanced|Kingo with stronger cosmic energy blasts.
+Sersi:Matter Manipulation|Sersi transmuting matter.
+Druig:Full Telepathy|Druig at full telepathy, controlling minds.
+Makkari:Full Speed|Makkari at full speed, the fastest Eternal.
+Phastos:Full Technology|Phastos with full command of technology.
+Ajak:Eternal Enhanced|Ajak with a boosted link to the Celestials and healing.
+Kro:Deviant Enhanced|Kro with boosted shapeshifting and strength.
+Ultron:Adamantium|Ultron with an adamantium body, extremely tough.
+Ultron:Advanced|Advanced Ultron, with better weapons and processing.
+Ultron:Age of Ultron|Ultron from Age of Ultron, commanding drone armies.
+Ultron:Phalanx|Ultron merged with Phalanx tech.
+Ultron:Ultron Sigma|Ultron Sigma, an upgraded version.
+Ultron:Infinity Ultron|Ultron with Infinity Stone power.
+Deadpool:Weapon X|Deadpool as a Weapon X subject, with healing and combat skill.
+Deadpool:Zenpool|Zenpool: a calmer Deadpool with healing and combat skill.
+Deadpool:Venom Symbiote|Deadpool bonded with the Venom symbiote.
+Deadpool:Immortal Deadpool|Deadpool who cannot die.
+Deadpool:Cosmic Deadpool|Deadpool with cosmic power.
+Deadpool:Wolverine Bonded|Deadpool bonded with Wolverine's abilities.
+Domino:Probability Enhanced|Domino with boosted luck-shifting powers.
+Lady Deadpool:Enhanced|Lady Deadpool with boosted healing and mercenary skills.`.split('\n').forEach(l=>{const i=l.indexOf('|');F[l.slice(0,i)]=l.slice(i+1)});
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PC=['#ff4fa3','#29c5f6','#ffd23f','#7ee081','#ff8a3d','#a98bff','#ff6b6b','#2fe0c2','#f7a8ff','#c3f04a','#ffb3a1','#8fb4ff'];
+const CC=['#e2336b','#1f7fd1','#7a3fd6','#1a9e6a','#e0701c','#c9243a','#11948f','#8a5a1c','#5b54e8','#b0308f'];
+const nm=id=>DB[id].n+(DB[id].f?' ('+DB[id].f+')':'');
+const desc=id=>(DB[id].f?(F[DB[id].n+':'+DB[id].f]||D[DB[id].n]):D[DB[id].n])||'';
+const mono=id=>{const w=DB[id].n.replace(/[^A-Za-z0-9 \-]/g,'').split(/[\s\-]+/).filter(Boolean);return(w.length>1?w[0][0]+w[1][0]:w[0].slice(0,2)).toUpperCase()};
+const hue=id=>{let h=0;for(const c of DB[id].n)h=(h*31+c.charCodeAt(0))>>>0;return CC[h%CC.length]};
+const pcol=i=>PC[i%PC.length];
+
+let G;try{G=JSON.parse(localStorage.getItem('mdb-auction-v2'))}catch(e){}
+if(!G||!G.screen)G={screen:'home'};
+const save=()=>{try{localStorage.setItem('mdb-auction-v2',JSON.stringify(G))}catch(e){}};
+let fx={};
+function R(){save();$('#app').innerHTML=V[G.screen]();fx={};tmSync();pushPub()}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),1800)}
+
+/* ---------- match history (persists across games, independent of the current session) ---------- */
+const histLoad=()=>{try{return JSON.parse(localStorage.getItem('mdb-history'))||[]}catch(e){return[]}};
+const histSave=h=>{try{localStorage.setItem('mdb-history',JSON.stringify(h.slice(0,10)))}catch(e){}};
+const totLoad=()=>{try{return+localStorage.getItem('mdb-total-games')||0}catch(e){return 0}};
+const totBump=()=>{try{localStorage.setItem('mdb-total-games',totLoad()+1)}catch(e){}};
+function recordMatch(){if(G.recorded)return;G.recorded=true;
+  const n=G.names,RP=G.rp||[],tot=n.map((_,i)=>RP.reduce((a,r)=>a+(r?r[i]:0),0));
+  const winner=n[tot.indexOf(Math.max(...tot))];
+  const h=histLoad();h.unshift({d:Date.now(),players:n.length,winner});histSave(h);totBump();
+}
+function finalizeMatch(){if(!G||G.screen!=='end'||G.recorded||!G.names||!G.names.length)return;
+  let winner;
+  if(G.win&&G.win.length)winner=G.win.map(i=>G.names[i]).join(' & ');
+  else{const RP=G.rp||[];if(RP.length){const tot=G.names.map((_,i)=>RP.reduce((a,r)=>a+(r?r[i]:0),0));winner=G.names[tot.indexOf(Math.max(...tot))]}}
+  if(!winner)return;
+  G.recorded=true;const h=histLoad();h.unshift({d:Date.now(),players:G.names.length,winner});histSave(h);totBump();
+}
+const histFmt=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+function historyChip(){const h=histLoad(),tot=totLoad();
+  return`<button class=histChip onclick="G.histOpen=1;R()" aria-label="View game history"><span class=hcNum>${tot}</span><span class=hcLbl>game${tot==1?'':'s'} played${h.length?` · last won by <b>${esc(h[0].winner)}</b>`:''}</span><span class=hcArrow aria-hidden="true">›</span></button>`}
+function historyModal(){const h=histLoad(),tot=totLoad();
+  return`<div class=ov onclick="if(event.target===this){G.histOpen=0;R()}"><div class=sheet role=dialog aria-label="Game history">
+  <h2>Game history</h2><p class=muted style="margin-top:-6px">${tot} game${tot==1?'':'s'} played in total</p>
+  ${h.length?`<div class=histList>${h.slice(0,10).map(e=>`<div class=histRow><span class=hDate>${esc(histFmt(e.d))}</span><span class=hWin>👑 ${esc(e.winner)}</span><span class=hPl>${e.players}p</span></div>`).join('')}</div>`
+    :`<p class=muted style="margin:0">No completed games yet — finish a draft to start your record.</p>`}
+  <button class="btn primary wide" style="margin-top:18px" onclick="G.histOpen=0;R()">Close</button>
+</div></div>`}
+
+/* ---------- rules ---------- */
+const N=()=>G.names.length;
+const need=i=>Math.max(0,G.min-G.teams[i].length);
+function maxBid(i){if(G.elim[i])return 0;let r=G.coins[i];if(G.guard&&G.phase=='draft')r-=Math.max(0,G.min-(G.teams[i].length+1));return Math.max(0,r)}
+function canBid(i){if(G.elim[i]||G.coins[i]<1)return false;if(G.phase=='draft')return G.teams[i].length<G.max&&maxBid(i)>=1;return !G.exDone[i]}
+const canEx=i=>!G.elim[i]&&G.coins[i]>=1&&!G.exDone[i];
+const exElig=()=>G.names.map((_,i)=>i).filter(canEx);
+function nextFrom(from){for(let k=1;k<=N();k++){const i=((from+G.dir*k)%N()+N())%N();if(canBid(i))return i}return -1}
+function order(from){const o=[];for(let k=0;k<N();k++)o.push(((from+G.dir*k)%N()+N())%N());return o}
+const pool=()=>{const u=new Set(G.used);return DB.map((_,i)=>i).filter(i=>!u.has(i))};
+function deal(){const u=pool(),c=[];while(c.length<3&&u.length)c.push(u.splice(Math.random()*u.length|0,1)[0]);G.cards=c;G.pick=null;G.bid=null;G.stage='pick';if(!c.length)endGame()}
+function checkElim(){G.names.forEach((_,i)=>{if(!G.elim[i]&&G.teams[i].length<G.min&&G.coins[i]<need(i)){G.elim[i]=true;G.log.push({t:'out',p:i})}})}
+function snap(){const c={...G};delete c.hist;G.hist=(G.hist||[]).slice(-19).concat(JSON.stringify(c))}
+function undo(){if(!G.hist||!G.hist.length)return toast('Nothing to undo');const h=G.hist,prev=JSON.parse(h.pop());G=Object.assign(prev,{hist:h});G.menu=0;R();toast('Last result undone')}
+
+/* ---------- setup ---------- */
+function newGame(){finalizeMatch();G={screen:'setup',s:{n:4,names:[],coins:20,max:5,min:4,ex:1,dir:1,first:'p1',guard:true,online:0,timer:0,code:rc(),rounds:3}};R()}
+function st(k,d,lo,hi){const s=G.s;s[k]=Math.max(lo,Math.min(hi,s[k]+d));if(k=='max'&&s.min>s.max)s.min=s.max;if(k=='min'&&s.min>s.max)s.max=s.min;R()}
+function setS(k,v){G.s[k]=v;if(k=='online'&&v)netHost();R()}
+function begin(){const s=G.s;const names=Array.from({length:s.n},(_,i)=>(s.names[i]||'').trim()||'Player '+(i+1));
+  if(s.coins<s.min)return toast('Starting coins must be at least '+s.min);
+  G={screen:'game',names,start:s.coins,max:s.max,min:s.min,exOn:s.ex>0,exDone:names.map(_=>false),exQ:[],exNo:0,exTot:0,dir:s.dir,guard:s.guard,
+     coins:names.map(_=>s.coins),teams:names.map(_=>[]),elim:names.map(_=>false),used:[],log:[],hist:[],phase:'draft',exRound:0,queue:[],win:[],round:1,rp:[],rk:[]};
+  G.turn=s.first=='rand'?Math.random()*names.length|0:0;G.first0=G.turn;G.timer=s.timer;G.online=s.online;G.code=s.code;G.rounds=s.rounds||3;deal();R();if(G.online)netHost()}
+
+/* ---------- play ---------- */
+function reveal(k){G.pick=G.cards[k];G.stage='bid';const e=G.phase=='exchange'?exElig():[];
+  G.bid=e.length==1?{p:e[0],a:1,auto:1}:{p:G.phase=='exchange'&&!e.includes(G.turn)?e[0]:G.turn,a:1};hist();fx.flip=1;R();SX.play('flip');burst($('.face'),26)}
+function pickBidder(i){const b=G.bid;b.p=i;if(b.a>maxBid(i))b.a=Math.max(1,maxBid(i));fx.bump=1;hist();tmReset();R()}
+function pickAmt(a){G.bid.a=a;fx.bump=1;hist();tmReset();R()}
+function award(){const{p,a}=G.bid;if(!canBid(p)||a<1||a>maxBid(p))return toast('That bid is not allowed');
+  snap();
+  if(G.phase=='exchange'&&G.teams[p].length>=G.max){G.stage='swap';return R()}
+  G.coins[p]-=a;G.teams[p].push(G.pick);G.used.push(G.pick);G.log.push({t:'win',p,c:G.pick,a,ph:G.phase});if(G.phase=='exchange')G.exDone[p]=true;
+  toast(G.names[p]+' gets '+DB[G.pick].n);burst($('.tag'),40);SX.play('sold');after()}
+function doSwap(j){const{p,a}=G.bid,out=G.teams[p][j];G.used=G.used.filter(x=>x!==out);G.teams[p][j]=G.pick;G.used.push(G.pick);G.coins[p]-=a;
+  G.exDone[p]=true;G.log.push({t:'swap',p,c:G.pick,out,a});toast(G.names[p]+' swapped in '+DB[G.pick].n);after()}
+function cancelSwap(){G.hist.pop();G.stage='bid';R()}
+function passCard(){snap();G.log.push({t:'pass',c:G.pick,ph:G.phase});after()}
+function after(){checkElim();
+  if(G.phase=='draft'){const t=nextFrom(G.turn);if(t<0)return toExchange();G.turn=t;deal();return R()}
+  nextEx()}
+/* Exchange phase: every player draws ONE card, in table order. Only players who have not
+   exchanged yet may bid, and each player can win at most one exchange. If exactly one
+   eligible player is left, the drawn card goes to them by default for 1 coin. */
+function toExchange(){if(!G.exOn||!exElig().length)return endGame();G.phase='exchange';G.exQ=order(G.first0).filter(i=>!G.elim[i]);G.exTot=G.exQ.length;G.exNo=0;nextEx()}
+function nextEx(){if(!G.exQ.length||!exElig().length)return endGame();G.turn=G.exQ.shift();G.exNo++;deal();R()}
+function skipToExchange(){if(!confirm('Stop the draft now and move to the exchange rounds?'))return;snap();G.menu=0;checkElim();
+  if(G.phase=='draft')toExchange();else R()}
+function endGame(){G.names.forEach((_,i)=>{if(G.teams[i].length<G.min)G.elim[i]=true});G.screen='end';G.menu=0;R();rain();SX.play('fan')}
+function toggleWin(i){G.win=G.win.includes(i)?G.win.filter(x=>x!==i):G.win.concat(i);R()}
+
+/* ---------- views ---------- */
+const V={};
+V.home=()=>`<section class=hero>
+  <div class=fan>${['Doctor Strange','Thor','Spider-Man','Iron Man','Wolverine'].map((n,k)=>{const id=DB.findIndex(d=>d.n==n);return`<span class=fc style="--r:${(k-2)*9}deg;--y:${Math.abs(k-2)*10}px;--d:${k*.3}s;--cc:${hue(id)}">${art(id)}</span>`}).join('')}</div>
+  <h1 class=logo3 aria-label="Marvel Draft Battle"><span class="w l1" data-t="Marvel" aria-hidden="true">Marvel</span><span class="w l2" data-t="Draft" aria-hidden="true">Draft</span><span class="w l3" aria-hidden="true">Battle</span>
+  <i class=sp style="left:2%;top:18%"></i><i class=sp style="right:4%;top:8%;animation-delay:.9s;width:18px;height:18px"></i><i class=sp style="right:12%;bottom:22%;animation-delay:1.6s"></i></h1>
+  <p>Reveal a hero, fight over the price, build the team of five that wins the table.</p>
+  <div class=actions>
+    ${G.saved?`<button class="btn gold" onclick="G=G.saved;R()">Continue saved game</button>`:''}
+    <button class="btn primary" onclick="newGame()">Start a new game</button>
+    <button class="btn" onclick="G={screen:'join'};netJoin()">Join online game (phone)</button><button class="btn" onclick="G.screen='how';R()">How to play</button>
+    <button class="btn gold" onclick="G.aiP=1;R()">🤖 AI battle judge</button>
+  </div>${historyChip()}</section>${G.aiP?aiPromptModal():''}${G.copyBox?copyBoxModal():''}${G.histOpen?historyModal():''}`;
+V.how=()=>`<div class=howto><h2 style="font-size:48px">How it works</h2><ol>
+  <li>The host sets everyone's coins, team size and the number of exchange rounds.</li>
+  <li>The player whose turn it is taps one of three face-down cards. Everyone sees who it is.</li>
+  <li>The picker is already bidding 1 coin. Anyone can shout a higher price.</li>
+  <li>The host taps the leading player and their price. When bidding stops, the host taps <b>Give</b>.</li>
+  <li>Each player needs the minimum number of characters set at setup. Run out of coins before you get there and you're out.</li>
+  <li>Every team gets a <b>bonding rating</b> (0-100) for how well its heroes fit together: shared teams, family ties and friendships raise it; hero-vs-villain clashes and rivalries lower it. Rarer cards have higher stats.</li><li>Then the exchange phase: each player draws one exchange card in turn. Anyone who hasn't exchanged yet can bid, but nobody can win more than one exchange. If only one player is still without an exchange, the card goes to them for 1 coin.</li>
+</ol><button class="btn primary wide" onclick="G.screen='home';R()">Got it</button></div>`;
+
+V.setup=()=>{const s=G.s;while(s.names.length<s.n)s.names.push('');
+return`<div class=setup><div class=top><span class=brand>Marvel Draft Battle</span><button class=btn onclick="G={screen:'home'};R()">Cancel</button></div>
+<h2>New game</h2>
+<div class=box><div class=row><div><h3 style="margin:0">Players</h3><small>Seat them in table order</small></div>
+  <div class=step><button onclick="st('n',-1,2,12)" aria-label="Fewer players">−</button><b>${s.n}</b><button onclick="st('n',1,2,12)" aria-label="More players">+</button></div></div>
+  <div class=names>${Array.from({length:s.n},(_,i)=>`<label class=name><i style="background:${pcol(i)}"></i><input value="${esc(s.names[i])}" placeholder="Player ${i+1}" oninput="G.s.names[${i}]=this.value;save()" aria-label="Player ${i+1} name"></label>`).join('')}</div></div>
+<div class=box><h3>Game mode</h3>
+  <div class=row><div>Where do you play?<small>Online lets everyone bid from their own phone (hosted link only)</small></div><div class=seg><button class="${s.online?'':'on'}" onclick="setS('online',0)">Offline</button><button class="${s.online?'on':''}" onclick="setS('online',1)">Online</button></div></div>
+  ${s.online?`<div class=row><div>Room code<small>Players tap Join online game and type this</small></div><b class=code>${s.code}</b></div>`:''}
+  <div class=row><div>Bid countdown<small>Time runs out, then 3-2-1-SOLD happens automatically</small></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class=seg><button class="${s.timer?'':'on'}" onclick="setS('timer',0)">Off</button>${[10,15,20,30].map(v=>`<button class="${s.timer==v?'on':''}" onclick="setS('timer',${v})">${v}s</button>`).join('')}</div><input class=num type=number min=5 max=120 value="${s.timer||''}" placeholder="sec" onchange="setS('timer',Math.max(5,Math.min(120,+this.value||0)))" aria-label="Custom seconds"></div></div></div>
+<div class=box><h3>Money and teams</h3>
+  <div class=row><div>Starting coins<small>Everyone gets the same purse</small></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class=seg>${[10,15,20,25,30].map(v=>`<button class="${s.coins==v?'on':''}" onclick="setS('coins',${v})">${v}</button>`).join('')}</div>
+    <input class=num type=number min=1 max=99 value="${s.coins}" onchange="setS('coins',Math.max(1,Math.min(99,+this.value||20)))" aria-label="Custom starting coins"></div></div>
+  <div class=row><div>Full team</div><div class=step><button onclick="st('max',-1,1,8)">−</button><b>${s.max}</b><button onclick="st('max',1,1,8)">+</button></div></div>
+  <div class=row><div>Minimum to stay in<small>Fewer than this at the end means out</small></div><div class=step><button onclick="st('min',-1,1,8)">−</button><b>${s.min}</b><button onclick="st('min',1,1,8)">+</button></div></div>
+  <div class=row><label class=toggle><input type=checkbox ${s.guard?'checked':''} onchange="G.s.guard=this.checked;save()"><span>Block bids that would leave a player unable to reach ${s.min}<small>Keeps 1 coin in reserve for every slot they still need</small></span></label></div>
+</div>
+<div class=box><h3>Turns</h3>
+  <div class=row><div>Pick order</div><div class=seg><button class="${s.dir==1?'on':''}" onclick="setS('dir',1)">Clockwise</button><button class="${s.dir==-1?'on':''}" onclick="setS('dir',-1)">Anticlockwise</button></div></div>
+  <div class=row><div>First pick</div><div class=seg><button class="${s.first=='p1'?'on':''}" onclick="setS('first','p1')">${esc(s.names[0]||'Player 1')}</button><button class="${s.first=='rand'?'on':''}" onclick="setS('first','rand')">Random</button></div></div>
+  <div class=row><div>Exchange phase<small>After the draft each player draws one exchange card. Only players who haven't exchanged can bid, and each player wins at most one exchange.</small></div><div class=seg><button class="${s.ex?'on':''}" onclick="setS('ex',1)">On</button><button class="${s.ex?'':'on'}" onclick="setS('ex',0)">Off</button></div></div>  <div class=row><div>Rounds to play<small>Points add up across rounds; the totals table shows the overall winner</small></div><div class=step><button onclick="st('rounds',-1,1,10)">−</button><b>${s.rounds}</b><button onclick="st('rounds',1,1,10)">+</button></div></div>
+</div>
+<button class="btn primary wide" style="min-height:62px;font-size:20px" onclick="begin()">Start the draft</button></div>`};
+
+function roster(){return`<aside class=roster><h3>Table</h3>${G.names.map((n,i)=>{const t=G.teams[i],now=i===G.turn&&G.screen=='game',req=G.min;
+  const st=G.elim[i]?`<span class="badge bad">Out</span>`:now?`<span class="badge go">${G.phase=='exchange'?'Drawing':'Picking'}</span>`:G.phase=='exchange'&&G.exDone[i]?`<span class=badge>Exchanged ✓</span>`:t.length>=G.max?`<span class=badge>Full</span>`:need(i)?`<span class=badge>Needs ${need(i)}</span>`:'';
+  return`<div class="pt ${now?'now':''} ${G.elim[i]?'out':''}" style="--pc:${pcol(i)}"><div class=hd><span class=nm>${esc(n)}</span>${st}<span class=cn>${G.coins[i]}<small>coins</small></span></div><div class=stack>${Array.from({length:Math.min(G.coins[i],15)},()=>'<i></i>').join('')}</div>
+  <div class=slots>${Array.from({length:G.max},(_,k)=>t[k]!=null?`<span class="slot f" style="--cc:${hue(t[k])}" title="${esc(nm(t[k]))}">${art(t[k],1)}</span>`:`<span class="slot ${k<req?'req':''}"></span>`).join('')}</div>
+  ${bondBar(t)}${t.length?`<ul class=team>${t.map(c=>`<li><b>${esc(DB[c].n)}</b>${DB[c].f?' · '+esc(DB[c].f):''}</li>`).join('')}</ul>`:''}</div>`}).join('')}</aside>`}
+
+function phaseLabel(){return `Round ${G.round||1}${G.rounds?' of '+G.rounds:''} · `+(G.phase=='draft'?'Draft':`Exchange · draw ${G.exNo} of ${G.exTot}`)}
+
+
+const exStrip=()=>G.phase=='exchange'?`<div class=exs>${G.names.map((n,i)=>`<span class="ex ${G.exDone[i]?'done':''}" style="--pc:${pcol(i)}"><i></i>${esc(n)} · ${G.elim[i]?'Out':G.exDone[i]?'Exchanged ✓':canEx(i)?'Can bid':'No coins'}</span>`).join('')}</div>`:'';
+const autoDock=(c,b)=>`<div class="dock auto"><h3>Default award</h3><p class=muted style="margin:0">${esc(G.names[b.p])} is the only player still without an exchange, so this card goes to them at the default price of <b>1 coin</b>.</p><div class=award><button class="btn gold" onclick="award()">Give ${esc(DB[c].n)} to ${esc(G.names[b.p])} for 1</button><button class=btn onclick="passCard()">Decline</button></div></div>`;
+
+/* ---------- card art (generated comic-style emblems) ----------
+   To use real artwork instead, add entries here, e.g. IMG['Thor']='images/thor.jpg' */
+const IMG={};
+const GL={
+bolt:'<path d="M58 4 22 56h24l-8 40 40-56H54z"/>',
+star:'<path d="M50 4l12 34h36L69 59l11 35-30-21-30 21 11-35L2 38h36z"/>',
+flame:'<path d="M50 4c4 22 32 32 30 62C78 86 64 96 50 96S22 86 20 66c0-16 12-22 16-38 6 8 8 12 14-24z"/>',
+moon:'<path d="M62 6a44 44 0 1 0 32 60A36 36 0 0 1 62 6z"/>',
+fist:'<rect x="18" y="42" width="64" height="48" rx="12"/><circle cx="29" cy="40" r="10"/><circle cx="46" cy="36" r="10"/><circle cx="63" cy="36" r="10"/><circle cx="78" cy="42" r="8"/>',
+shield:'<circle cx="50" cy="50" r="46"/><circle cx="50" cy="50" r="34" fill="none" stroke="#0007" stroke-width="6"/><path fill="#0007" d="M50 22l7 20h21L61 54l6 20-17-12-17 12 6-20-17-12h21z"/>',
+spider:'<ellipse cx="50" cy="54" rx="12" ry="18"/><circle cx="50" cy="30" r="8"/><path fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" d="M40 44 12 26M40 54 6 54M40 62 12 84M42 68 24 96M60 44 88 26M60 54 94 54M60 62 88 84M58 68 76 96"/>',
+venom:'<path d="M8 30C30 14 44 34 50 54 56 34 70 14 92 30 86 62 62 86 50 96 38 86 14 62 8 30z"/><path fill="#000a" d="M18 38C32 30 42 44 46 58 34 56 22 50 18 38zM82 38C68 30 58 44 54 58 66 56 78 50 82 38z"/>',
+claws:'<path d="M14 6l16 88 10-4zM40 6l14 88 10-6zM66 6l12 82 10-8z"/>',
+gem:'<path d="M50 4 90 36 50 96 10 36z"/><path fill="#0006" d="M10 36h80L50 96zM50 4 30 36h40z"/>',
+atom:'<g fill="none" stroke="currentColor" stroke-width="6"><ellipse cx="50" cy="50" rx="44" ry="16"/><ellipse cx="50" cy="50" rx="44" ry="16" transform="rotate(60 50 50)"/><ellipse cx="50" cy="50" rx="44" ry="16" transform="rotate(120 50 50)"/></g><circle cx="50" cy="50" r="10"/>',
+ring:'<g fill="none" stroke="currentColor" stroke-width="5"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="32" stroke-dasharray="8 6"/><path d="M50 22 74 64H26zM50 78 26 36h48z"/></g>',
+mask:'<path d="M50 8C22 8 8 30 12 56 16 80 34 94 50 94 66 94 84 80 88 56 92 30 78 8 50 8z"/><path fill="#000a" d="M18 44C30 38 44 44 46 56 32 60 20 56 18 44zM82 44C70 38 56 44 54 56 68 60 80 56 82 44z"/>',
+skull:'<path d="M50 6C24 6 12 26 16 48c2 10 8 14 12 18v16h44V66c4-4 10-8 12-18C88 26 76 6 50 6z"/><circle cx="36" cy="48" r="9" fill="#000a"/><circle cx="64" cy="48" r="9" fill="#000a"/><path fill="#000a" d="M50 58l-5 10h10z"/>'};
+const GM=[[/Thor|Storm|Electro|Beta Ray|Black Bolt/,'bolt'],[/Hulk|Hercules|Thing|Ares|Abominat|Rhino|A-Bomb|Skaar|Titania|Absorbing|Luke Cage|Iron Fist|Colossus|Cull|Sandman/,'fist'],
+[/Captain America|Black Knight|Valkyrie/,'shield'],[/Venom|Carnage|Toxin|Sleeper|Hybrid|Knull/,'venom'],[/Spider|Silk|Kaine|Pavitr|Miles|Morlun|Karn|Solus|Verna|Kindred/,'spider'],
+[/Wolverine|X-23|Daken|Sabretooth|Werewolf/,'claws'],[/Jean Grey|Human Torch|Ghost Rider|Dormammu|Mephisto|Satana/,'flame'],[/Moon/,'moon'],
+[/Vision|Adam Warlock|Thanos|Ronan|Ebony|Proxima|Corvus/,'gem'],[/Iron Man|Ultron|Deathlok|Octopus|Fantastic|Beast|Leader|Amadeus|Phastos|Doctor Doom|Ant-Man|Wasp|Sinister/,'atom'],
+[/Doctor Strange|Scarlet Witch|Agatha|Clea|Wiccan|Voodoo|Ancient|Magik|Shuma|Nightmare/,'ring'],[/Panther|Deadpool|Domino|Elektra|Daredevil|Black Cat|Mysterio|Goblin|Echo|Taskmaster|Kingpin/,'mask'],
+[/Punisher|Dracula|Blade|Morbius|Kraven|Selene/,'skull']];
+const glyph=id=>{for(const[r,g]of GM)if(r.test(DB[id].n))return g;return'star'};
+function art(id,mini){const d=DB[id],c=hue(id);
+  if(IMG[d.n])return`<img src="${esc(IMG[d.n])}" alt="">`;
+  const g=GL[glyph(id)],alt=CC[[...d.f].reduce((a,ch)=>(a*31+ch.charCodeAt(0))>>>0,7)%CC.length];let rays='';
+  for(let i=0;i<14;i++){const a=i*Math.PI/7,b=a+.16;rays+=`<path d="M100 110L${(100+300*Math.cos(a))|0} ${(110+300*Math.sin(a))|0}L${(100+300*Math.cos(b))|0} ${(110+300*Math.sin(b))|0}z"/>`}
+  const sp=/cosmic|phoenix|full|omega|god|supreme|king|infinity|celestial/i.test(d.f)?[[30,40,5],[170,60,4],[150,210,6],[40,190,4],[172,150,3]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}"/>`).join(''):'';
+  return`<svg viewBox="${mini?'20 45 160 160':'0 0 200 280'}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="200" height="280" fill="${c}"/><path d="M0 280V150L200 60V280z" fill="${alt}" opacity=".55"/><g fill="#fff" opacity=".13">${rays}</g><g fill="#fff" opacity=".85">${sp}</g><g transform="translate(34 46) scale(1.32)" fill="#000" color="#000" opacity=".3"><g transform="translate(4 5)">${g}</g></g><g transform="translate(34 46) scale(1.32)" fill="#fff" color="#fff">${g}</g></svg>`}
+
+V.game=()=>{const p=G.turn,col=pcol(p);let s='';
+  if(G.stage=='pick'){s=`<div class=turn style="--pc:${col}"><h2><span class=who>${esc(G.names[p])}</span> ${G.phase=='draft'?'picks a card':'draws an exchange card'}</h2></div>
+    <div class=deck>${G.cards.map((c,k)=>`<button class=back onclick="reveal(${k})" aria-label="Card ${k+1}">?</button>`).join('')}</div>
+    <p class=hint>${G.phase=='draft'?`${esc(G.names[p])} opens the bidding at 1 coin.`:`Only players who haven't exchanged can bid, and each player wins one exchange at most.`}</p>`}
+  else{const c=G.pick,b=G.bid,bc=pcol(b.p),cc=hue(c);
+    s=`<div class=reveal style="--cc:${cc};--cc2:${bc};--rc:${tier(c)[2]}"><div class="face ${fx.flip?'flip':''}">${art(c)}<span class=rar>${tier(c)[0]}</span><span class=form><b>${esc(DB[c].n)}</b><i>${esc(DB[c].f||'Classic form')}</i></span></div>
+      <div class=info><p class=muted>Picked by ${esc(G.names[p])}</p><h2>${esc(DB[c].n)}</h2><div class=formname style="color:${cc}">${esc(DB[c].f||'Classic form')}</div><p>${esc(desc(c))}</p>${statBars(c)}
+      <div class="tag ${fx.bump?'bump':''}" style="--pc:${bc}"><span class=amt>${b.a}</span><span><small>Highest bid</small><span class=who>${esc(G.names[b.p])}</span></span></div></div></div>`;
+    if(G.stage=='bid'&&b.auto)s+=autoDock(c,b);else if(G.stage=='bid'){const mb=maxBid(b.p);
+      s+=`${tmBar()}<div class=dock><div><h3>Who's leading?</h3><div class=bidders style="margin-top:10px">${G.names.map((n,i)=>`<button class="bidder ${i===b.p?'on':''}" style="--pc:${pcol(i)}" ${canBid(i)?'':'disabled'} onclick="pickBidder(${i})"><i></i><span>${esc(n)}<small>${G.elim[i]?'Out':G.phase=='exchange'&&G.exDone[i]?'Exchange used':G.phase=='draft'&&G.teams[i].length>=G.max?'Team full':'Up to '+maxBid(i)+' coins'}</small></span></button>`).join('')}</div></div>
+      <div><h3>For how much?</h3><div class=quick style="margin-top:10px"><button class="btn gold" ${b.a+1>mb?'disabled':''} onclick="quick(1)">Next bid: ${b.a+1} coin${b.a+1==1?'':'s'}</button></div>${b.h&&b.h.length>1?`<div class=hist style="margin-top:10px">${b.h.slice(-6).map(x=>`<span>${esc(G.names[x.p])} · ${x.a}</span>`).join('')}</div>`:''}<div class=coins style="margin-top:10px">${Array.from({length:G.start},(_,k)=>k+1).map(v=>`<button class="coin ${v===b.a?'on':''}" ${(v<=b.a||v>mb)?'disabled':''} onclick="pickAmt(${v})" aria-label="${v} coins">${v}</button>`).join('')}</div></div>
+      <div class=award><button class="btn gold" onclick="sell()">🔨 Sell ${esc(DB[c].n)} to ${esc(G.names[b.p])} for ${b.a}</button>
+      ${G.phase=='exchange'?`<button class=btn onclick="passCard()">Nobody wants it</button>`:`<button class=link onclick="if(confirm('Put this card back in the pool without selling it?'))passCard()">Put card back</button>`}</div></div>`}
+    if(G.stage=='swap'){const q=b.p;s+=`<div class=dock><h3>${esc(G.names[q])}, who goes back to the pool? <small class=muted>Incoming: ${esc(nm(G.pick))} (${tier(G.pick)[0]})</small></h3><div class=swap>${G.teams[q].map((t,j)=>`<button class=btn onclick="doSwap(${j})"><span style="display:flex;gap:10px;align-items:center"><span class=th style="--cc:${hue(t)}">${art(t,1)}</span><span><b>${esc(DB[t].n)}</b> <span class=muted>${esc(DB[t].f||'Classic form')}</span></span></span><span>Swap out ⇄</span></button>`).join('')}<button class=link onclick="cancelSwap()">Back to bidding</button></div></div>`}}
+  return`<div class=top><span class=brand>Draft Battle</span><span class=pill>${phaseLabel()}</span>${G.phase=='draft'?'<button class="btn gold" onclick="skipToExchange()">Exchange phase →</button>':''}<button class=btn onclick="G.aiP=1;R()">🤖 AI judge</button><button class=btn onclick="undo()">Undo</button><button class=btn onclick="G.menu=1;R()">Menu</button></div>
+  <div class=game><section class=stage style="--pc:${col}">${exStrip()}${s}</section>${roster()}</div>${G.menu?menu():''}${G.pv?poolView():''}${G.aiP?aiPromptModal():''}${G.copyBox?copyBoxModal():''}`};
+
+function menu(){return`<div class=ov onclick="if(event.target===this){G.menu=0;R()}"><div class=sheet role=dialog aria-label="Host menu"><h2>Host menu</h2>
+  <button class="btn wide" onclick="undo()">Undo last result</button>
+  ${G.phase=='draft'?`<button class="btn wide" onclick="skipToExchange()">End draft, start exchanges</button>`:''}
+  <button class="btn wide" onclick="if(confirm('End the game and show final teams?'))endGame()">End game and show teams</button>
+  <button class="btn wide" onclick="G.menu=0;G.pv=1;R()">Browse card pool</button>
+  <button class="btn wide" onclick="themeFlip()">Switch light / dark</button>
+  <button class="btn wide" onclick="skinFlip()">Change skin (Default / Cosmic / Neon)</button>
+  <button class="btn wide" onclick="if(confirm('Abandon this game and start over?')){G={screen:'home'};R()}">Abandon game</button>
+  <button class="btn primary wide" onclick="G.menu=0;R()">Back to the game</button></div></div>`}
+function themeFlip(){const r=document.documentElement,dark=getComputedStyle(r).getPropertyValue('--bg').trim()=='#0e1331';r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('mdb-theme',r.dataset.theme)}catch(e){}}
+try{const t=localStorage.getItem('mdb-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}
+
+function logLine(e){if(e.t=='win')return`${esc(G.names[e.p])} bought ${esc(nm(e.c))} for ${e.a}`;
+  if(e.t=='swap')return`${esc(G.names[e.p])} paid ${e.a} to swap ${esc(nm(e.out))} for ${esc(nm(e.c))}`;
+  if(e.t=='pass')return`${esc(nm(e.c))} went back unsold`;return`${esc(G.names[e.p])} was knocked out`}
+function summary(){return G.names.map((n,i)=>`${G.win.includes(i)?'👑 ':''}Team ${n}${G.elim[i]?' — OUT':''}\n`+G.teams[i].map(c=>'  - '+nm(c)).join('\n')).join('\n\n')}
+
+/* ---------- robust copy: clipboard API -> execCommand -> visible manual box ---------- */
+function legacyCopy(t){try{const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.top='-9999px';ta.style.left='-9999px';document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,t.length);const ok=document.execCommand('copy');document.body.removeChild(ta);return ok}catch(e){return false}}
+function copyText(t,label,okMsg){
+  const showBox=()=>{G.copyBox={title:label,text:t};G.aiP=0;R();setTimeout(()=>{const el=document.getElementById('copyBoxTa');if(el){el.focus();el.select()}},30)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>toast(okMsg)).catch(()=>{if(legacyCopy(t))toast(okMsg);else showBox()});
+  }else{if(legacyCopy(t))toast(okMsg);else showBox()}
+}
+function copyBoxModal(){const b=G.copyBox;if(!b)return'';return`<div class=ov onclick="if(event.target===this){G.copyBox=null;R()}"><div class=sheet role=dialog aria-label="Copy ${esc(b.title)}">
+  <h2>📋 ${esc(b.title)}</h2>
+  <p class=muted style="margin-top:-6px">Automatic copy isn't available here. Tap the box below, select all, then copy manually.</p>
+  <textarea id=copyBoxTa readonly onclick="this.select()" style="width:100%;min-height:220px;margin-top:10px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:13px/1.5 var(--body);resize:vertical">${esc(b.text)}</textarea>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn gold" onclick="const el=document.getElementById('copyBoxTa');el.focus();el.select();try{if(document.execCommand('copy'))toast('Copied')}catch(e){}">Select & copy</button><button class="btn primary" onclick="G.copyBox=null;R()">Done</button></div>
+</div></div>`}
+function copySummary(){copyText(summary(),'Teams','Teams copied')}
+
+/* ---------- AI battle judge: master prompt ---------- */
+const MASTER_PROMPT=`MARVEL COMIC-ACCURATE TEAM BATTLE RULES
+
+We are playing a Marvel Comics 5-character team battle/draft game. Evaluate every character using comic-accurate powers, feats, abilities, scaling, and potential.
+
+1. PEAK VERSION RULE
+Always use the strongest legitimate comic portrayal of the character/form being named.
+
+Alternate Earths, universes, timelines, and continuities are allowed if they contain a legitimate comic portrayal of that character/form.
+
+Do NOT restrict the battle to Earth-616.
+
+If a specific form is named, use the peak version of THAT EXACT FORM only.
+
+Examples:
+- Odinforce Thor = peak Odinforce Thor
+- King Thor = peak King Thor
+- Immortal Hulk = peak Immortal Hulk
+- Maestro Hulk = peak Maestro
+- Godbuster Iron Man = peak Godbuster Iron Man
+- Godkiller Iron Man = peak Godkiller Iron Man
+- Lifebringer Galactus = peak Lifebringer Galactus
+
+Do not merge different forms together or give a character powers from another form just because that character has access to them in another incarnation.
+
+2. TITLES ARE NOT AUTOMATICALLY FORMS
+A title or status does not automatically mean a separate power form.
+
+If a character's title represents a position, role, or status rather than a fundamentally different transformation, do not artificially create a separate form.
+
+Example:
+Knull is the King in Black. Treating "King in Black" as a title does not automatically mean that ordinary Knull is dramatically weaker.
+
+For Knull specifically, his raw/inherent power should be judged at his peak potential. Do not automatically treat "Knull" and "Knull, King in Black" as completely separate transformations.
+
+Apply the same logic to other Marvel characters where a title is a status rather than a genuine alternate power form.
+
+3. RAW POWER RULE
+Judge characters primarily by their own inherent comic-accurate abilities, powers, feats, durability, speed, intelligence, experience, hax, reality manipulation, magic, cosmic abilities, regeneration, resurrection, etc.
+
+Use the character's actual demonstrated comic capabilities and established potential.
+
+Do not use fan-made power scaling as fact.
+
+Do not use MCU versions unless specifically requested.
+
+4. NO ARMIES RULE
+This is a 5-character team battle, so DO NOT count armies, followers, minions, troops, or large external forces as additional combat power.
+
+Examples that normally should NOT count:
+- Knull's symbiote army
+- Doombots
+- Ultron's armies
+- armies of demons
+- armies of followers
+- armies of summoned creatures
+- other large groups controlled by a character
+
+This would be unfair because one character could effectively become an entire team.
+
+ONLY include an army/external force if it is genuinely an inseparable and intrinsic part of that character's own power and cannot reasonably be separated from the character.
+
+The default rule is:
+CHARACTER'S OWN POWER > ARMY/EXTERNAL RESOURCES.
+
+5. TEAM BATTLE RULE
+Do NOT judge the teams simply by comparing their strongest individual characters.
+
+Evaluate the entire five-character team.
+
+A single extremely powerful character should NOT automatically carry a team consisting of four weak/street-level characters against another team containing multiple comparable cosmic/high-tier characters.
+
+Consider:
+- Overall team power
+- Number of high-tier/cosmic characters
+- Power distribution
+- Offensive capability
+- Defensive capability
+- Hax/counters
+- Speed
+- Durability
+- Battlefield control
+- Intelligence
+- Regeneration/healing
+- Resurrection/revival
+- Reality manipulation
+- Magic
+- Cosmic abilities
+- Ability interaction
+- Team synergy
+- Team diversity
+
+6. POWER-TIER BALANCE
+If Team A has one extremely powerful cosmic character but four relatively weak characters, while Team B has several extremely powerful cosmic characters, do not automatically give Team A the victory because of its single strongest character.
+
+Multiple characters operating at similar extraordinary levels can create a major team advantage through combined attacks, defense, counters, and battlefield control.
+
+Judge the actual five-vs-five interaction.
+
+7. TEAM BONDING AND EXPERIENCE
+Give a SMALL advantage to teams whose members have strong established comic relationships and have fought together extensively.
+
+Consider:
+- Long-term teamwork
+- Shared battles
+- Trust
+- Understanding of each other's abilities
+- Established coordination
+- Team tactics
+- Strong character bonds
+
+This is only a secondary factor.
+
+Team bonding must NOT overcome a massive raw-power difference.
+
+8. TEAM DIVERSITY
+Give a SMALL advantage to teams with a diverse combination of abilities.
+
+For example:
+- Long-range attacks
+- Close-range combat
+- Extreme strength
+- Speed
+- Cosmic power
+- Reality manipulation
+- Magic
+- Telepathy
+- Intelligence
+- Strategy
+- Defense
+- Healing/regeneration
+- Resurrection/revival
+- Energy manipulation
+- Power absorption
+- Sealing/counter abilities
+- Battlefield control
+
+A diverse team can deal with more types of threats and cover each other's weaknesses.
+
+Again, diversity is a secondary advantage and cannot automatically overcome a huge power difference.
+
+9. FAIRNESS
+The objective is to determine the most plausible result of a comic-accurate five-character battle.
+
+Do not favor a team simply because it contains one famous or exceptionally powerful character.
+
+Do not artificially weaken cosmic characters.
+
+Do not artificially inflate weaker characters.
+
+Do not count optional armies or followers.
+
+Use the strongest legitimate comic portrayal of the exact forms specified.
+
+10. FINAL OUTPUT FORMAT
+When I provide multiple teams, DO NOT give a long character-by-character explanation unless I specifically ask for it.
+
+Simply rank the teams:
+
+1st — Team [Name]
+2nd — Team [Name]
+3rd — Team [Name]
+4th — Team [Name]
+etc.
+
+Then give approximately 2–3 short lines for each team explaining the important factors considered:
+- Overall power
+- Number of high-tier characters
+- Team synergy/bonding
+- Diversity
+- Counters
+- Balance
+- Comic-accurate abilities
+
+DO NOT say:
+"Team A won because of Franklin Richards."
+
+Instead, describe the team's overall advantages.
+
+Example:
+
+1st — Team A
+Exceptional overall cosmic power with multiple high-tier characters, strong defensive/offensive coverage, and excellent ability diversity. Strong team synergy and several counters make the lineup highly balanced.
+
+2nd — Team B
+Very high individual power with excellent cosmic and reality-based abilities, but slightly less overall coverage and team cohesion than Team A.
+
+3rd — Team C
+Strong physical and cosmic combatants with good regeneration and versatility, but fewer top-tier characters and weaker coverage against extreme reality-level abilities.
+
+Keep the final answer SHORT unless I specifically ask for a detailed breakdown.
+
+11. IMPORTANT
+Every time a new team battle is given, apply ALL of these rules automatically.
+
+The goal is:
+PEAK COMIC VERSIONS + EXACT SPECIFIED FORMS + RAW/INHERENT POWER + NO OPTIONAL ARMIES + FULL TEAM INTERACTION + TEAM SYNERGY + TEAM DIVERSITY + FAIR COMIC-ACCURATE EVALUATION.
+
+Do not change these rules unless I explicitly tell you to.`;
+
+function copyMasterPrompt(){copyText(MASTER_PROMPT,'Master prompt','Master prompt copied')}
+
+function aiPromptModal(){return`<div class=ov onclick="if(event.target===this){G.aiP=0;R()}"><div class=sheet role=dialog aria-label="AI battle judge">
+  <h2>🤖 Judge the battle with AI</h2>
+  <p class=muted style="margin-top:-6px">Do this once per AI chat, then reuse that same chat for every round.</p>
+  <ol style="margin:0 0 16px;padding-left:20px;line-height:1.7">
+    <li><b>Copy the master prompt</b> below.</li>
+    <li>Open ChatGPT (or any AI) and start a <b>new chat or new project</b>.</li>
+    <li><b>Paste the master prompt</b> as your first message and send it.</li>
+    <li>Come back here, <b>copy the teams</b> from the results screen, and paste them into that same chat.</li>
+  </ol>
+  <button class="btn gold wide" onclick="copyMasterPrompt()">📋 Copy master prompt</button>
+  <details style="margin-top:14px"><summary class=link style="cursor:pointer">Preview the prompt</summary>
+    <pre style="white-space:pre-wrap;font:13px/1.5 var(--body);max-height:260px;overflow:auto;background:var(--panel2);padding:12px;border-radius:10px;margin-top:8px;border:1px solid var(--line)">${esc(MASTER_PROMPT)}</pre></details>
+  <button class="btn primary wide" style="margin-top:14px" onclick="G.aiP=0;R()">Close</button>
+</div></div>`}
+
+V.end=()=>`<div class=end><div class=top><span class=brand>Draft Battle</span><button class=btn onclick="G.aiP=1;R()">🤖 AI judge</button><button class=btn onclick="undo()">Undo</button><button class="btn primary" onclick="newGame()">New game</button></div>
+  <h2>Round ${G.round} of ${G.rounds||3} complete</h2><p class=muted style="margin:-8px 0 0">Rank this round below to unlock the next one, or settle the battle at the table and crown the winner.</p>
+  ${scoreSec()}<div class=results>${G.names.map((n,i)=>`<div class="pt res ${G.elim[i]?'out':''} ${G.win.includes(i)?'win':''}" style="--pc:${pcol(i)}"><div class=hd><span class=nm>${G.win.includes(i)?'👑 ':''}${esc(n)}</span>${G.elim[i]?'<span class="badge bad">Out</span>':'<span class=badge>In the battle</span>'}<span class=cn>${G.coins[i]}<small>left</small></span></div>
+    <ul class=team style="margin-top:10px">${G.teams[i].map(c=>`<li><b>${esc(DB[c].n)}</b> · ${esc(DB[c].f||'Classic form')}</li>`).join('')||'<li>No characters</li>'}</ul>${bondFull(G.teams[i])}<button class=link onclick="teamCard(${i})">Download team card</button>
+    ${G.elim[i]?'':`<button class="crown ${G.win.includes(i)?'on':''}" onclick="toggleWin(${i})">${G.win.includes(i)?'Winner':'Mark as winner'}</button>`}</div>`).join('')}</div>
+  <div class=box style="margin-top:4px"><h3 style="font-size:22px">🤖 Want an AI verdict?</h3><p class=muted style="margin:4px 0 12px">First time this chat: copy the master prompt into a new ChatGPT chat. After that, just copy the teams below and paste them in.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn gold" onclick="copyMasterPrompt()">📋 1. Copy master prompt</button><button class="btn primary" onclick="copySummary()">📋 2. Copy teams to share</button></div></div>
+  <details class=log><summary>Auction log (${G.log.length} entries)</summary><ol>${G.log.map(e=>`<li>${logLine(e)}</li>`).join('')}</ol></details></div>${G.aiP?aiPromptModal():''}${G.copyBox?copyBoxModal():''}`;
+
+if(G.screen!=='home'&&G.screen!=='setup'&&G.screen!=='how'&&G.names){finalizeMatch();const s=G;G={screen:'home',saved:s}}
+/* ---------- background music ----------
+   An original synth loop generated in the browser (no audio files needed).
+   To use your own track instead, set MUSIC_URL = 'music/theme.mp3' (works when the file is opened locally). */
+const MUSIC_URL='';
+const MU=(()=>{let ac,mg,el,nz,timer,next=0,bar=0,on=false;
+  const CH=[[57,60,64],[53,57,60],[48,52,55],[55,59,62]],f=m=>440*Math.pow(2,(m-69)/12),SB=2.4;
+  const osc=(t,m,d,type,v)=>{const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f(m);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(mg);o.start(t);o.stop(t+d+.05)};
+  const kick=t=>{const o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(42,t+.14);g.gain.setValueAtTime(.55,t);g.gain.exponentialRampToValueAtTime(.0001,t+.22);o.connect(g);g.connect(mg);o.start(t);o.stop(t+.25)};
+  const hat=t=>{const s=ac.createBufferSource(),h=ac.createBiquadFilter(),g=ac.createGain();s.buffer=nz;h.type='highpass';h.frequency.value=7000;g.gain.setValueAtTime(.09,t);g.gain.exponentialRampToValueAtTime(.0001,t+.05);s.connect(h);h.connect(g);g.connect(mg);s.start(t);s.stop(t+.06)};
+  function sched(t,b){const c=CH[b%4];
+    c.forEach(m=>osc(t,m,SB,'triangle',.05));
+    for(let i=0;i<8;i++)osc(t+i*.3,c[0]-24+([0,0,7,0,0,7,0,5][i]),.28,'sawtooth',.06);
+    for(let i=0;i<16;i++)osc(t+i*.15,c[[0,1,2,1][i%4]]+12,.14,'square',.018);
+    if(b%4>=2)[0,1.2].forEach((o,i)=>osc(t+o,c[i?1:2]+24,1.0,'triangle',.05));
+    for(let i=0;i<4;i++){kick(t+i*.6);hat(t+i*.6+.3)}}
+  function start(){if(on)return;on=true;
+    if(MUSIC_URL){el=el||Object.assign(new Audio(MUSIC_URL),{loop:true,volume:.4});el.play().catch(()=>{});return}
+    if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();mg=ac.createGain();mg.gain.value=0;mg.connect(ac.destination);
+      nz=ac.createBuffer(1,ac.sampleRate/2,ac.sampleRate);const d=nz.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+    ac.resume();mg.gain.cancelScheduledValues(ac.currentTime);mg.gain.linearRampToValueAtTime(.16,ac.currentTime+1.5);
+    next=ac.currentTime+.15;timer=setInterval(()=>{while(next<ac.currentTime+.6){sched(next,bar++);next+=SB}},250)}
+  function stop(){on=false;clearInterval(timer);if(el)el.pause();if(ac){mg.gain.cancelScheduledValues(ac.currentTime);mg.gain.linearRampToValueAtTime(0,ac.currentTime+.4);setTimeout(()=>{if(!on)ac.suspend()},600)}}
+  return{start,stop,get on(){return on}}})();
+const mb=document.createElement('button');mb.id='mbtn';document.body.appendChild(mb);
+const pref=()=>{try{return localStorage.getItem('mdb-music')}catch(e){return null}};
+function mbView(){mb.textContent=MU.on?'🔊':'🔇';mb.className=MU.on?'on':'';mb.setAttribute('aria-label',MU.on?'Mute music':'Play music')}
+mb.onclick=e=>{e.stopPropagation();MU.on?MU.stop():MU.start();try{localStorage.setItem('mdb-music',MU.on?'1':'0')}catch(x){}mbView()};
+addEventListener('pointerdown',()=>{if(!MU.on&&pref()!=='0'){MU.start();mbView()}},{once:true,capture:true});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&MU.on){MU.stop();mb.dataset.resume=1}else if(!document.hidden&&mb.dataset.resume){delete mb.dataset.resume;MU.start()}mbView()});
+mbView();
+
+/* ---------- VFX ---------- */
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function burst(el,n=30){if(!el||RM)return;const r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+  const g=document.createElement('div');g.className='ring';g.style.cssText=`left:${x}px;top:${y}px`;document.body.appendChild(g);setTimeout(()=>g.remove(),700);
+  for(let i=0;i<n;i++){const p=document.createElement('i'),a=Math.random()*6.283,d=70+Math.random()*150;p.className='fp';
+    p.style.cssText=`left:${x}px;top:${y}px;--s:${5+Math.random()*8|0}px;--c:${PC[i%PC.length]};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px;--rot:${Math.random()*720|0}deg`;document.body.appendChild(p);setTimeout(()=>p.remove(),1000)}}
+function rain(){if(RM)return;for(let i=0;i<70;i++){const p=document.createElement('i');p.className='fr';
+  p.style.cssText=`left:${Math.random()*100}vw;top:-20px;--s:${6+Math.random()*8|0}px;--c:${PC[i%PC.length]};--dx:${(Math.random()-.5)*160|0}px;--t:${2.5+Math.random()*2}s;animation-delay:${Math.random()*1.2}s`;document.body.appendChild(p);setTimeout(()=>p.remove(),6500)}}
+document.addEventListener('pointermove',e=>{document.querySelectorAll('.face').forEach(f=>{const r=f.getBoundingClientRect(),inn=e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+  f.style.setProperty('--ry',inn?((e.clientX-r.left)/r.width-.5)*18+'deg':'0deg');f.style.setProperty('--rx',inn?-((e.clientY-r.top)/r.height-.5)*18+'deg':'0deg')})});
+
+/* ---------- card stats & rarity ---------- */
+const PRO={bolt:[70,60,45,90,70],fist:[92,40,35,35,88],shield:[60,65,75,40,70],venom:[75,70,40,45,75],spider:[55,88,70,35,55],claws:[65,85,45,25,80],flame:[45,60,50,92,55],moon:[55,65,55,50,55],gem:[50,50,80,85,50],atom:[40,45,95,70,50],ring:[30,50,85,85,40],mask:[50,85,70,25,50],skull:[65,65,55,55,65],star:[65,70,55,88,70]};
+const TOP=/Galactus|Thanos|Franklin|Molecule|Sentry|Silver Surfer|Apocalypse|Doctor Strange|^Thor|^Hulk|Jean Grey|Scarlet Witch|Captain Marvel|Legion|Adam Warlock|Knull|Dormammu|Shuma|Mephisto|Annihilus|Magneto|Black Bolt|Blue Marvel|Nate Grey|Cassandra|Jamie|Hercules|Ares|Beta Ray|Starbrand|Quasar|Spectrum|Gladiator|Ultron|Doctor Doom|Storm|Namor/;
+const hs=t=>{let h=7;for(const c of t)h=(h*31+c.charCodeAt(0))>>>0;return h},stC={},SN=['STR','SPD','INT','NRG','DUR'];
+function stats(id){if(stC[id])return stC[id];const d=DB[id],b=(TOP.test(d.n)?12:0)+(/Full|Phoenix|Cosmic|Omega|God|Supreme|King|Infinity|Celestial|Breaker|Immortal|Ultimate|Enhanced/.test(d.f)?8:0)-(d.f?0:4),h=hs(d.n+d.f);
+  return stC[id]=PRO[glyph(id)].map((v,k)=>Math.max(12,Math.min(99,v+b+((h>>>(k*4))%17)-8)))}
+const power=id=>Math.round(stats(id).reduce((a,b)=>a+b)/5);
+const TIERS=[['Legendary',80,'#ffd23f'],['Epic',68,'#b56cff'],['Rare',56,'#29c5f6'],['Common',0,'#9aa3c7']];
+const tier=id=>{const p=power(id);return TIERS.find(t=>p>=t[1])};
+const statBars=id=>`<div class=stats>${stats(id).map((v,k)=>`<div class=st><span>${SN[k]}</span><u><i style="width:${v}%"></i></u><span>${v}</span></div>`).join('')}</div>`;
+
+/* ---------- bonding rating: how well a team gets along ---------- */
+const TG=[['Avengers','Iron Man|Captain America|Thor|Hulk|Black Panther|Ant-Man|Wasp|Vision|Scarlet Witch|Captain Marvel|Hercules|She-Hulk|Sentry|Blue Marvel|Spectrum|Quasar|Moon Knight|Luke Cage|Jessica Jones|Iron Fist|Shang-Chi|Black Knight|Valkyrie|Spider-Woman|Spider-Man|Wolverine|Doctor Strange'],
+['X-Men','Wolverine|X-23|Jean Grey|Cyclops|Storm|Rogue|Gambit|Colossus|Magik|Cable|Psylocke|Beast|Archangel|Nightcrawler|Bishop|Warpath|Strong Guy|Havok|Legion|Nate Grey|Domino'],
+['Mutants','Wolverine|X-23|Jean Grey|Cyclops|Storm|Rogue|Gambit|Colossus|Magik|Cable|Psylocke|Beast|Archangel|Nightcrawler|Bishop|Warpath|Strong Guy|Havok|Legion|Nate Grey|Domino|Magneto|Apocalypse|Mister Sinister|Selene|Sabretooth|Daken|Cassandra Nova|Jamie Braddock|Franklin Richards|Namor'],
+['Fantastic Four','Mister Fantastic|Invisible Woman|Human Torch|Thing|She-Thing|Valeria Richards|Franklin Richards|Dragon Man'],
+['Spider-Verse','Spider-Man|Spider-Man 2099|Miles Morales|Ghost-Spider|Spider-Woman|Silk|Spider-Girl|Scarlet Spider|Kaine|Superior Spider-Man|Spider-Man Noir|Spider-Punk|Pavitr Prabhakar|Spider-UK|Cosmic Spider-Man 2099'],
+['Spidey Foes','Green Goblin|Hobgoblin|Doctor Octopus|Electro|Sandman|Lizard|Mysterio|Vulture|Kraven|Kingpin|Scorpion|Rhino|Morlun|Karn|Solus|Verna|Kindred|Venom|Carnage|Black Cat'],
+['Symbiotes','Venom|Carnage|Toxin|Sleeper|Hybrid|Knull'],
+['Cosmic','Captain Marvel|Quasar|Nova|Starbrand|Silver Surfer|Adam Warlock|Beta Ray Bill|Gladiator|Moondragon|Mantis|Jack of Hearts|Darkhawk|Starhawk|Galactus|Thanos|Thane|Ronan|Ebony Maw|Corvus Glaive|Proxima Midnight|Cull Obsidian|Supergiant|Terrax|Annihilus|Super-Skrull|Spectrum'],
+['Black Order','Thanos|Ebony Maw|Corvus Glaive|Proxima Midnight|Cull Obsidian|Supergiant'],
+['Gods','Thor|Hercules|Ares|Valkyrie|Beta Ray Bill|Thena|Gilgamesh'],
+['Gamma','Hulk|She-Hulk|Red Hulk|Red She-Hulk|Abomination|Leader|A-Bomb|Skaar|Amadeus Cho'],
+['Mystic','Doctor Strange|Scarlet Witch|Agatha Harkness|Clea|Wiccan|Doctor Voodoo|Ancient One|Magik|Dormammu|Mephisto|Shuma-Gorath|Nightmare|Satana'],
+['Night Watch','Blade|Dracula|Morbius|Werewolf by Night|Ghost Rider|Moon Knight|Satana'],
+['Street Level','Daredevil|Elektra|Punisher|Luke Cage|Iron Fist|Jessica Jones|Kingpin|Taskmaster|Echo|Black Cat|Moon Knight'],
+['Mercs','Deadpool|Lady Deadpool|Domino|Taskmaster|Punisher'],
+['Inhumans','Black Bolt|Medusa|Karnak|Crystal|Lockjaw|Gorgon|Maximus|Ahura'],
+['Eternals','Ikaris|Thena|Gilgamesh|Kingo|Sersi|Druig|Makkari|Phastos|Ajak|Kro'],
+['Tech Minds','Iron Man|Ultron|Vision|Doctor Doom|Mister Fantastic|Beast|Leader|Amadeus Cho|Phastos|Doctor Octopus|Black Panther|Deathlok|Ant-Man']].map(([t,l])=>[t,new Set(l.split('|'))]);
+const VIL=new Set('Carnage|Green Goblin|Hobgoblin|Doctor Octopus|Electro|Sandman|Lizard|Mysterio|Vulture|Kraven|Kingpin|Scorpion|Rhino|Morlun|Karn|Solus|Verna|Kindred|Knull|Thanos|Ronan|Ebony Maw|Corvus Glaive|Proxima Midnight|Cull Obsidian|Supergiant|Galactus|Dormammu|Mephisto|Shuma-Gorath|Nightmare|Dracula|Satana|Abomination|Leader|Titania|Absorbing Man|Maximus|Ultron|Doctor Doom|Annihilus|Apocalypse|Cassandra Nova|Mister Sinister|Selene|Sabretooth|Kro|Super-Skrull|Terrax|Toxin|Sleeper|Hybrid|Magneto'.split('|'));
+const PR=[['Wolverine','X-23',22],['Wolverine','Daken',14],['Wolverine','Sabretooth',-14],['Cyclops','Jean Grey',22],['Cyclops','Havok',16],['Scarlet Witch','Vision',22],['Ant-Man','Wasp',22],['Hulk','She-Hulk',16],['Hulk','Skaar',18],['Hulk','Red Hulk',-8],['Thanos','Thane',16],['Doctor Strange','Clea',18],['Magik','Colossus',18],['Mister Fantastic','Doctor Doom',-14],['Black Panther','Storm',16],['Captain America','Iron Man',10],['Spider-Man','Spider-Girl',20],['Black Bolt','Medusa',22],['Mister Fantastic','Franklin Richards',18],['Thor','Hercules',-6],['Rogue','Gambit',18],['Nightcrawler','Psylocke',8],['Spider-Man','Green Goblin',-10],['Magneto','Cyclops',-8]];
+const tags=n=>TG.filter(t=>t[1].has(n)).map(t=>t[0]);
+const BL=[[90,'Unbreakable'],[75,'Family'],[55,'Squad'],[35,'Allies'],[0,'Strangers']];
+function bond(ids){const n=ids.length;if(n<2)return{s:0,l:'—',c:[],x:[]};const B=ids.map(i=>DB[i].n),cnt={},fr=[];let tot=0,pairs=0;
+  B.forEach(b=>tags(b).forEach(t=>cnt[t]=(cnt[t]||0)+1));
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const a=B[i],b=B[j],ta=tags(a),tb=tags(b),sh=ta.filter(t=>tb.includes(t)).length;let s=Math.min(2,sh)*12;
+    if(a==b)s+=10;const pr=PR.find(([x,y])=>x==a&&y==b||x==b&&y==a);if(pr){s+=pr[2];if(pr[2]<0)fr.push(a+' vs '+b)}
+    const va=VIL.has(a),vb=VIL.has(b);if(va!=vb&&!sh){s-=14;fr.push(a+' vs '+b)}else if(va&&vb)s+=4;tot+=s;pairs++}
+  const sc=Math.max(0,Math.min(100,Math.round(30+tot/pairs*2)));
+  return{s:sc,l:BL.find(x=>sc>=x[0])[1],c:Object.entries(cnt).filter(e=>e[1]>1).sort((a,b)=>b[1]-a[1]).slice(0,4).map(e=>e[1]+'× '+e[0]),x:[...new Set(fr)].slice(0,2)}}
+const bondBar=t=>{if(t.length<2)return'';const b=bond(t);return`<div class=bond><small><span>Bond · ${b.l}</span><b>${b.s}</b></small><div class=bar><i style="width:${b.s}%"></i></div></div>`};
+const bondFull=t=>{if(t.length<2)return'';const b=bond(t);return bondBar(t)+`<div class=chips>${b.c.map(x=>`<span class=chip>${esc(x)}</span>`).join('')}${b.x.map(x=>`<span class="chip bad">⚡ ${esc(x)}</span>`).join('')}</div>`};
+
+/* ---------- end screen extras ---------- */
+function podium(){const r=G.names.map((n,i)=>({i,n,b:bond(G.teams[i])})).filter(x=>!G.elim[x.i]&&G.teams[x.i].length>1).sort((a,b)=>b.b.s-a.b.s).slice(0,3);if(!r.length)return'';
+  const H=[230,180,140],ord=r.length>2?[1,0,2]:r.length>1?[1,0]:[0];
+  return`<div><h3 style="font-size:30px;margin-bottom:8px">Best team bond</h3><div class=podium>${ord.map(k=>{const x=r[k];return`<div class=pod style="height:${H[k]}px;--pc:${pcol(x.i)};animation-delay:${.2+k*.15}s"><span class=muted>#${k+1}</span><b>${esc(x.n)}</b><span class=sc>${x.b.s}</span><small>${x.b.l}</small></div>`}).join('')}</div></div>`}
+function highlights(){const w=G.log.filter(e=>e.t=='win'||e.t=='swap'),o=[];
+  if(w.length){const mx=w.reduce((a,b)=>b.a>a.a?b:a),st=w.reduce((a,b)=>power(b.c)-b.a*4>power(a.c)-a.a*4?b:a);
+    o.push(`💰 <b>Priciest buy</b><br>${esc(G.names[mx.p])} paid ${mx.a} for ${esc(nm(mx.c))}`,`🎯 <b>Biggest steal</b><br>${esc(G.names[st.p])} got ${esc(nm(st.c))} (${tier(st.c)[0]}) for ${st.a}`)}
+  o.push(`🔄 <b>Exchanges</b><br>${G.log.filter(e=>e.t=='swap'||(e.t=='win'&&e.ph=='exchange')).length} made`);return`<div class=hl>${o.map(x=>`<div>${x}</div>`).join('')}</div>`}
+function teamCard(i){const t=G.teams[i],b=bond(t),c=document.createElement('canvas');c.width=800;c.height=190+t.length*70+70;const x=c.getContext('2d');
+  x.fillStyle='#0e1331';x.fillRect(0,0,800,c.height);x.fillStyle=pcol(i);x.fillRect(0,0,800,14);x.fillStyle='#fff';x.font='900 56px Impact,Arial Narrow,sans-serif';x.fillText(G.names[i].toUpperCase(),40,90);
+  x.font='700 24px Arial';x.fillStyle='#ffd23f';x.fillText('Bond '+b.s+' · '+b.l+'   |   '+G.coins[i]+' coins left',40,132);
+  t.forEach((id,k)=>{const y=180+k*70,tr=tier(id);x.fillStyle=tr[2];x.fillRect(40,y,10,50);x.fillStyle='#fff';x.font='800 30px Arial';x.fillText(DB[id].n,66,y+24);x.fillStyle='#a4aad8';x.font='600 20px Arial';x.fillText((DB[id].f||'Classic form')+' · '+tr[0]+' · '+power(id),66,y+48)});
+  x.fillStyle='#a4aad8';x.font='600 20px Arial';x.fillText('Marvel Draft Battle · '+b.c.join(' · '),40,c.height-26);
+  c.toBlob(bl=>{const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=G.names[i].replace(/\W+/g,'_')+'_team.png';a.click()})}
+
+/* ---------- auction: quick bids, history, gavel countdown ---------- */
+function hist(){const b=G.bid;b.h=b.h||[];const l=b.h[b.h.length-1];if(!l||l.p!=b.p||l.a!=b.a)b.h.push({p:b.p,a:b.a})}
+function quick(n){const b=G.bid;pickAmt(Math.min(maxBid(b.p),b.a+n))}
+let gvT=[];
+
+/* ---------- pool browser + skins ---------- */
+const poolRows=l=>l.map(i=>`<div class=pi><span class=th style="--cc:${hue(i)}">${art(i,1)}</span><span><b>${esc(DB[i].n)}</b> <span class=muted>${esc(DB[i].f||'Classic form')}</span></span><span class=chip style="margin-left:auto;background:${tier(i)[2]};color:#10142e">${tier(i)[0]}</span></div>`).join('');
+const poolList=q=>pool().filter(i=>(nm(i)+' '+tier(i)[0]).toLowerCase().includes(q.toLowerCase())).slice(0,120);
+const poolFind=q=>{$('#pl').innerHTML=poolRows(poolList(q))};
+const poolView=()=>`<div class=ov onclick="if(event.target===this){G.pv=0;R()}"><div class=sheet role=dialog aria-label="Card pool"><h2>Card pool</h2><input class=q placeholder="Search name, form or tier…" oninput="poolFind(this.value)"><small class=muted>${pool().length} cards left (showing up to 120)</small><div class=pool id=pl>${poolRows(poolList(''))}</div><button class="btn primary wide" onclick="G.pv=0;R()">Close</button></div></div>`;
+function skinFlip(){const r=document.documentElement,K=['default','cosmic','neon'],n=K[(K.indexOf(r.dataset.skin||'default')+1)%3];r.dataset.skin=n;try{localStorage.setItem('mdb-skin',n)}catch(e){}toast('Skin: '+n)}
+try{const k=localStorage.getItem('mdb-skin');if(k)document.documentElement.dataset.skin=k}catch(e){}
+
+/* ---------- sound effects ---------- */
+const SX=(()=>{let ac,nz,on=true;try{on=localStorage.getItem('mdb-sfx')!=='0'}catch(e){}
+  const cx=()=>{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();nz=ac.createBuffer(1,ac.sampleRate/2,ac.sampleRate);const d=nz.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}ac.resume();return ac};
+  const tone=(f,t0,d,ty='sine',v=.25,f2)=>{const a=cx(),o=a.createOscillator(),g=a.createGain(),t=a.currentTime+t0;o.type=ty;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+d+.02)};
+  const sw=(t0,d,v=.18)=>{const a=cx(),s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain(),t=a.currentTime+t0;s.buffer=nz;f.type='bandpass';f.frequency.setValueAtTime(600,t);f.frequency.exponentialRampToValueAtTime(4000,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(f);f.connect(g);g.connect(a.destination);s.start(t);s.stop(t+d)};
+  const S={flip:()=>{sw(0,.25);tone(500,.15,.15,'triangle',.15,900)},coin:()=>{tone(1300,0,.12,'square',.07);tone(1900,.07,.2,'square',.07)},tick:()=>tone(700,0,.09,'square',.1),
+    sold:()=>{tone(150,0,.18,'sine',.6,50);sw(0,.06,.3);[523,659,784,1047].forEach((f,i)=>tone(f,.15+i*.09,.25,'triangle',.2))},fan:()=>[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,i*.13,.35,'triangle',.22))};
+  return{play(n){if(on)try{S[n]()}catch(e){}},get on(){return on},toggle(){on=!on;try{localStorage.setItem('mdb-sfx',on?'1':'0')}catch(e){}return on}}})();
+const sb=document.createElement('button');sb.id='sbtn';document.body.appendChild(sb);
+const sbView=()=>{sb.textContent=SX.on?'🔔':'🔕';sb.className=SX.on?'on':'';sb.setAttribute('aria-label',SX.on?'Mute sound effects':'Turn on sound effects')};
+sb.onclick=e=>{e.stopPropagation();SX.toggle();sbView();SX.play('coin')};sbView();
+document.addEventListener('click',e=>{if(e.target.closest('.coin,.bidder,.quick .btn'))SX.play('coin')});
+
+/* ---------- v5: timer, 3-2-1-SOLD, online play ---------- */
+const TM={left:0,iv:0};let GV=null,NET=null,HOOK=0,JOIN=0,PUB=null,ME=null,CODE='';
+function rc(){return Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.random()*24|0]).join('')}
+const tmBar=()=>G.timer?`<div class=tm><div class=tmb><i id=tmi></i></div><b id=tmn>${G.timer}s</b></div>`:'';
+function tmStop(){clearInterval(TM.iv);TM.iv=0}
+function tmStart(){tmStop();TM.left=G.timer;TM.iv=setInterval(tmTick,100)}
+function tmReset(){if(TM.iv)TM.left=G.timer}
+function tmSync(){const on=G.screen=='game'&&G.stage=='bid'&&G.timer&&G.bid&&!G.bid.auto&&!$('#gv');if(!on)return tmStop();if(!TM.iv)tmStart()}
+function tmTick(){TM.left-=.1;const i=$('#tmi'),n=$('#tmn'),t=$('.tm');if(i)i.style.width=Math.max(0,TM.left/G.timer*100)+'%';if(n)n.textContent=Math.ceil(Math.max(0,TM.left))+'s';if(t)t.classList.toggle('hot',TM.left<=5);if(TM.left<=3.05){tmStop();gavel()}}
+function sell(){gavel()}
+function outbid(i){const b=G.bid,a=b.a+1;if(!canBid(i)||a>maxBid(i))return;if(GV)GV();b.p=i;b.a=a;fx.bump=1;hist();tmReset();R();SX.play('coin')}
+function gavel(){const b=G.bid;if(GV||!canBid(b.p)||b.a<1||b.a>maxBid(b.p))return toast('That bid is not allowed');tmStop();const c=G.pick,o=document.createElement('div');o.id='gv';o.style.setProperty('--pc',pcol(b.p));
+  const el=G.names.map((_,i)=>i).filter(i=>i!=b.p&&canBid(i)&&b.a+1<=maxBid(i));
+  o.innerHTML=`<div class=gvc><small>Going to the highest bidder</small><b>${esc(DB[c].n)}</b><span>${esc(DB[c].f||'Classic form')} · ${tier(c)[0]}</span></div><div class=gvn>3</div><div class=gvs>Going once…</div><div class=gvl><i></i><span><small>Leading bid</small>${esc(G.names[b.p])}</span><em>${b.a}</em></div>
+  <div class=gvb>${el.length?`<small>Outbid with +1 coin</small><div class=bidders>${el.map(i=>`<button class=bidder style="--pc:${pcol(i)}" onclick="outbid(${i})"><i></i><span>${esc(G.names[i])}<small>Bid ${b.a+1}</small></span></button>`).join('')}</div>`:'<small>Nobody can outbid</small>'}</div>`;
+  document.body.appendChild(o);const n=o.querySelector('.gvn'),sy=o.querySelector('.gvs'),L=['Going once…','Going twice…','Last call!'];
+  const end=()=>{gvT.forEach(clearTimeout);gvT=[];o.remove();GV=null},
+  show=(t,ms)=>gvT.push(setTimeout(()=>{n.textContent=t;sy.textContent=L[3-t];n.style.animation='none';void n.offsetWidth;n.style.animation='';SX.play('tick');burst(n,14);pushPub()},ms));
+  show('3',0);show('2',1000);show('1',2000);
+  gvT.push(setTimeout(()=>{n.textContent='SOLD!';n.className='gvn sold';sy.textContent='to '+G.names[b.p]+' for '+b.a;o.querySelector('.gvb').remove();document.body.classList.add('shk');setTimeout(()=>document.body.classList.remove('shk'),400);award();burst(n,70);rain();gvT.push(setTimeout(end,1700))},3000));
+  GV=end}
+/* online: Supabase Realtime room transport. The host remains authoritative; clients only send picks/bids. */
+const SUPABASE_URL='https://rommhkinoxzwhcqngdts.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_7nX9udITjF7jVIKvihNZfg_aJ9TT8SQ';
+let SB=null,ROOMS={};
+
+async function netInit(){
+  if(NET!==null)return NET;
+  try{
+    if(!window.supabase||!window.supabase.createClient)throw new Error('Supabase library unavailable');
+    SB=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+    const handlers={};
+    NET={
+      async room(code){
+        code=String(code||'').toUpperCase();
+        if(!code)throw new Error('Missing room code');
+        if(ROOMS[code])return ROOMS[code];
+        const ch=SB.channel('mdb-room-'+code,{config:{broadcast:{self:true}}});
+        Object.keys(handlers).forEach(ev=>ch.on('broadcast',{event:ev},m=>handlers[ev].forEach(fn=>fn({data:m.payload}))));
+        await new Promise((resolve,reject)=>{
+          let settled=false;
+          ch.subscribe(status=>{
+            if(status==='SUBSCRIBED'){settled=true;resolve()}
+            else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){settled=true;reject(new Error(status))}
+          });
+          setTimeout(()=>{if(!settled)reject(new Error('Realtime connection timed out'))},10000);
+        });
+        ROOMS[code]=ch;
+        return ch;
+      },
+      on(ev,fn){
+        (handlers[ev]||(handlers[ev]=[])).push(fn);
+        Object.values(ROOMS).forEach(ch=>ch.on('broadcast',{event:ev},m=>fn({data:m.payload})));
+      },
+      async emit(ev,data){
+        const ch=await this.room(data&&data.c);
+        return ch.send({type:'broadcast',event:ev,payload:data});
+      }
+    };
+  }catch(e){
+    console.error('Supabase Realtime init failed:',e);
+    NET=false;
+  }
+  return NET;
+}
+async function netHost(){
+  const r=await netInit();
+  if(!r)return toast('Online connection failed. Playing offline.');
+  try{await r.room(G.code||(G.s&&G.s.code));}
+  catch(e){return toast('Could not connect to the online room.');}
+  if(!HOOK){HOOK=1;
+    r.on('hello',m=>{if(m.data&&m.data.c==(G.code||(G.s&&G.s.code)))pushPub()});
+    r.on('pick',m=>{const d=m.data;if(d&&d.c==G.code&&G.stage=='pick'&&d.p==G.turn&&d.k>=0&&d.k<G.cards.length)reveal(d.k)});
+    r.on('bid',m=>{const d=m.data;if(!d||d.c!=G.code||G.stage!='bid'||G.bid.auto)return;const i=+d.p,a=+d.a;if(!G.names[i]||!canBid(i)||!(a>G.bid.a)||a>maxBid(i))return;if(GV)GV();G.bid.p=i;G.bid.a=a;fx.bump=1;hist();tmReset();R();SX.play('coin')});
+  }
+  pushPub()
+}
+function pushPub(){
+  if(!NET)return;
+  if(G.online&&G.names&&G.coins){
+    const b=G.bid,c=G.stage=='pick'?null:G.pick;
+    NET.emit('state',{c:G.code,sc:G.screen,st:G.stage,t:G.turn,n:G.names,co:G.coins,mx:G.names.map((_,i)=>G.screen=='game'?maxBid(i):0),ok:G.names.map((_,i)=>G.screen=='game'&&canBid(i)?1:0),
+      g:GV?1:0,cd:c!=null&&c!==undefined?{id:c,n:DB[c].n,f:DB[c].f||'Classic form',r:tier(c)[0],k:tier(c)[2]}:0,b:b&&G.stage=='bid'?{p:b.p,a:b.a,au:b.auto?1:0}:0,l:TM.iv?Math.ceil(TM.left):0,v:G.cards?G.cards.length:0}).catch(()=>{})
+  }else if(G.s&&G.s.online){
+    NET.emit('state',{c:G.s.code,sc:'setup',n:(G.s.names||[]).map((n,i)=>n||('Player '+(i+1)))}).catch(()=>{})
+  }
+}
+async function netJoin(){
+  const r=await netInit();
+  if(r&&!JOIN){
+    JOIN=1;
+    r.on('state',m=>{const d=m.data;if(G.screen!='join'||!d||d.c!=CODE)return;PUB=d;PUB.at=performance.now();drawJoin()});
+  }
+  R()
+}
+let JOINAT=0,JOINP=0;
+function joinTry(){
+  CODE=$('#jc').value.trim().toUpperCase();
+  if(!CODE)return;
+  JOINAT=Date.now();
+  NET&&NET.emit('hello',{c:CODE}).catch(()=>toast('Could not reach that room.'));
+  toast('Looking for room '+CODE+'…');
+  R();
+  clearInterval(JOINP);JOINP=setInterval(()=>{if(G.screen=='join'&&!PUB)R();else clearInterval(JOINP)},2000)
+}
+function drawJoin(){R();clearInterval(drawJoin.i);drawJoin.i=setInterval(()=>{const e=$('#jt');if(e&&PUB&&PUB.l)e.textContent=Math.max(0,Math.ceil(PUB.l-(performance.now()-PUB.at)/1000))+'s'},250)}
+const tx=(t,k)=>`<div class=howto style="text-align:center"><h2 style="font-size:${k||44}px">${t}</h2><button class=link onclick="G={screen:'home'};PUB=null;R()">Leave</button></div>`;
+V.join=()=>{if(NET===false)return`<div class=howto><h2 style="font-size:44px">Online needs the hosted link</h2><p class=muted>Open the published game link, then tap Join online game.</p><button class="btn primary wide" onclick="G={screen:'home'};R()">Back</button></div>`;
+  if(!PUB)return`<div class=howto><h2 style="font-size:48px">Join a game</h2><p class=muted>Type the 4-letter room code shown on the host's screen.</p><input class=num id=jc maxlength=4 placeholder=CODE style="width:100%;font-size:34px;letter-spacing:.2em;text-transform:uppercase"><button class="btn primary wide" style="margin-top:12px" onclick="joinTry()">Join</button>${JOINAT?`<p class=muted style="text-align:center">${(Date.now()-JOINAT>6000)?'Still no reply. Make sure the host has Online turned on for this same game, and the code matches exactly.':'Looking for room '+CODE+'…'}</p>`:''}<button class=link onclick="G={screen:'home'};R()">Back</button></div>`;
+  const P=PUB;if(ME==null||ME>=P.n.length)return`<div class=howto><h2 style="font-size:44px">Who are you?</h2><div class=bidders style="margin-top:12px">${P.n.map((n,i)=>`<button class=bidder style="--pc:${pcol(i)}" onclick="ME=${i};drawJoin()"><i></i><span>${esc(n)}</span></button>`).join('')}</div></div>`;
+  const m=ME,me=`<div class="pt now" style="--pc:${pcol(m)}"><div class=hd><span class=nm>${esc(P.n[m])}</span><span class=cn>${P.co[m]}<small>coins</small></span></div></div>`;let body='';
+  if(P.sc=='end')body=tx('Game over',40);
+  else if(P.st=='pick')body=P.t==m?`<h2 style="font-size:44px;text-align:center">Your pick!</h2><div class=deck>${Array.from({length:P.v},(_,k)=>`<button class=back onclick="NET.emit('pick',{c:CODE,p:ME,k:${k}})">?</button>`).join('')}</div>`:tx(esc(P.n[P.t])+' is picking…',36);
+  else if(P.st=='bid'&&P.cd&&P.b){const b=P.b,cid=P.cd.id,cc=cid!=null?hue(cid):'#888';body=`<div class=joincard>${cid!=null?`<div class="face mini" style="--cc:${cc}">${art(cid)}<span class=rar>${P.cd.r}</span></div><h3 style="margin:8px 0 2px">${esc(P.cd.n)}</h3><div class=formname style="color:${cc}">${esc(P.cd.f)}</div><p class=muted style="margin:6px 0">${esc(desc(cid))}</p>${statBars(cid)}`:''}
+    <div class=tag style="--pc:${pcol(b.p)};margin-top:10px"><span class=amt>${b.a}</span><span><small>Highest bid</small><span class=who>${esc(P.n[b.p])}</span></span></div></div>
+    <div class=bidbar>${P.l?`<div class=jt id=jt>${P.l}s</div>`:''}${b.au?'<p class=muted style="text-align:center;margin:0">Default award, the host will confirm.</p>':(()=>{const a=b.a+1,off=!P.ok[m]||a>P.mx[m]||(P.g&&b.p==m);return`<button class="btn gold" style="width:100%;font-size:26px;min-height:72px" ${off?'disabled':''} onclick="NET.emit('bid',{c:CODE,p:ME,a:${a}})">Bid ${a} coin${a==1?'':'s'}</button>`})()}</div>`}
+  else body=tx('Waiting for the host…',36);
+  return`<div class=ctl>${me}${body}<button class=link onclick="ME=null;drawJoin()">Not me</button></div>`};
+const ORD=['1st','2nd','3rd'],ord=k=>ORD[k]||(k+1)+'th';
+function rkAdd(i){G.rk=(G.rk||[]).concat(i);const al=G.names.filter((_,x)=>!G.elim[x]).length;G.rk.length>=al?rkLock():R()}
+function rkUndo(){G.rk=(G.rk||[]).slice(0,-1);R()}
+function rkUnlock(){if(G.rp)G.rp[G.round-1]=null;R()}
+function rkLock(){const al=G.names.filter((_,i)=>!G.elim[i]).length;G.rp=G.rp||[];G.rp[G.round-1]=G.names.map((_,i)=>{const r=G.rk.indexOf(i);return r<0?0:(al-r)*5});if(G.round>=(G.rounds||3))recordMatch();R()}
+function nextRound(){const o=G,n=o.names,f=(o.first0+1)%n.length;G=Object.assign({},o,{screen:'game',round:o.round+1,coins:n.map(_=>o.start),teams:n.map(_=>[]),elim:n.map(_=>false),used:[],log:[],hist:[],phase:'draft',exDone:n.map(_=>false),exQ:[],exNo:0,exTot:0,queue:[],win:[],rk:[],menu:0,pv:0,turn:f,first0:f,pick:null,bid:null,cards:[]});deal();R()}
+function scoreSec(){const n=G.names,al=n.map((_,i)=>i).filter(i=>!G.elim[i]),rk=G.rk||[],RP=G.rp||[],lk=RP[G.round-1],tot=n.map((_,i)=>RP.reduce((a,r)=>a+(r?r[i]:0),0)),pts=k=>(al.length-k)*5;let h;
+  if(lk){const done=G.round>=(G.rounds||3);h=(done?`<div style="text-align:center"><h3 style="margin:0 0 6px">🏆 ${esc(n[tot.indexOf(Math.max(...tot))])} wins the draft!</h3><p class=muted style="margin:0">That was the last round — final standings below.</p></div>`:`<button class="btn gold wide" style="min-height:64px;font-size:20px" onclick="nextRound()">Start round ${G.round+1} of ${G.rounds} →</button>`)+`<button class=link style="margin-top:6px" onclick="rkUnlock()">Fix this round's ranking</button>`}
+  else h=`<p class=muted style="margin:0">Tap players below, winner first, to score round ${G.round}. 1st gets ${al.length*5} points, each place after gets 5 less.</p><div class=bidders>${al.filter(i=>!rk.includes(i)).map(i=>`<button class=bidder style="--pc:${pcol(i)}" onclick="rkAdd(${i})"><i></i><span>${esc(n[i])}<small>Gets place ${ord(rk.length)}</small></span></button>`).join('')}</div>${rk.length?`<div class=hist>${rk.map((i,k)=>`<span>${ord(k)} ${esc(n[i])} +${pts(k)}</span>`).join('')}</div>`:''}<div class=award>${rk.length?'<button class=btn onclick="rkUndo()">Undo last</button>':''}${al.length&&rk.length==al.length?`<button class="btn gold" onclick="rkLock()">Lock in round ${G.round} scores</button>`:''}</div>`;
+  const tb=RP.length?`<div style="overflow-x:auto;margin-top:10px"><table class=sb><thead><tr><th>Player</th>${RP.map((_,k)=>`<th>R${k+1}</th>`).join('')}<th>Total</th></tr></thead><tbody>${n.map((_,i)=>i).sort((a,b)=>tot[b]-tot[a]).map(i=>`<tr><td><i style="background:${pcol(i)}"></i>${esc(n[i])}</td>${RP.map(r=>`<td>${r?r[i]:0}</td>`).join('')}<td><b>${tot[i]}</b></td></tr>`).join('')}</tbody></table></div>`:'';
+  return`<div class=box style="display:grid;gap:12px"><h3 style="margin:0">Round ${G.round} · scoreboard</h3>${h}${tb}</div>`}
+R();
+</script></body></html>
