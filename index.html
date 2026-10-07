@@ -1431,7 +1431,7 @@ function gavel(){const b=G.bid;if(GV||!canBid(b.p)||b.a<1||b.a>maxBid(b.p))retur
   gvT.push(setTimeout(()=>{n.textContent='SOLD!';n.className='gvn sold';sy.textContent='to '+G.names[b.p]+' for '+b.a;o.querySelector('.gvb').remove();document.body.classList.add('shk');setTimeout(()=>document.body.classList.remove('shk'),400);award();burst(n,70);rain();gvT.push(setTimeout(end,1700))},3000));
   GV=end}
 /* online: Supabase Realtime room transport. The host remains authoritative; clients only send picks/bids. */
-const SUPABASE_URL='https://rommhkinoxzwhcqngdts.supabase.co';
+const SUPABASE_URL='https://rommhkjnoxzwhcqnqdts.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_7nX9udITjF7jVIKvihNZfg_aJ9TT8SQ';
 let SB=null,ROOMS={};
 
